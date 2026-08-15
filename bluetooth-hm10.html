@@ -207,10 +207,60 @@ back:</p>
 <p>No terminators, no framing, no checksum — one byte in, action out. Anything that can
 write a single character to <code>FFE1</code> can drive the car.</p>
 
-<h2>Three things that will catch you</h2>
+<h2>The return path</h2>
+
+<p>Both directions run over that one <code>FFE1</code> characteristic, but by two different
+mechanisms: you <strong>write</strong> to it to reach the Arduino, and the Arduino reaches
+you through <strong>notifications</strong> on the same characteristic. A client that only
+writes will drive the car perfectly and never see a single reply.</p>
 
 <div class="warn">
-  <h4>1 · Most "HM-10" modules on sale are clones</h4>
+  <h4>Enable notifications, or RX silently does nothing</h4>
+  <p>Subscribing — writing the CCCD descriptor <code>0x2902</code>, usually wrapped as
+  <code>startNotifications()</code> or a "subscribe" toggle — is what turns the return path
+  on. Skipping it is the classic half-working symptom: commands land, telemetry never
+  arrives, and nothing anywhere reports an error.</p>
+</div>
+
+<p>On the wire it is still an ordinary UART, so the module's <strong>TX goes to the board's
+RX</strong> and its <strong>RX to the board's TX</strong>. Get that crossover wrong and you
+lose one direction while the other keeps working — see below.</p>
+
+<h3>What each lesson sends back</h3>
+<div class="tw">
+<table>
+  <tr><th>Lesson</th><th>Sends</th><th>When</th></tr>
+  <tr><td>11</td><td>an echo of every byte received, with a newline</td><td>on every command</td></tr>
+  <tr><td>11, 13</td><td>the current angle</td><td>on <code class="cmd">D</code></td></tr>
+  <tr><td>12</td><td>the current angle</td><td>on <code class="cmd">Q</code></td></tr>
+  <tr><td>12</td><td>the new value of the gain just changed</td><td>on each of the ten tuning keys</td></tr>
+</table>
+</div>
+
+<div class="warn">
+  <h4>The replies have no terminator</h4>
+  <p>It is <code>Serial.print(angle)</code>, not <code>println</code> — lessons 12 and 13
+  send the digits and nothing else: no newline, no length, no delimiter. The module packetises
+  whatever happens to be in its UART buffer, so the client receives unframed fragments with no
+  way to tell where one value ends and the next begins. Either treat one notification as one
+  value, or change those calls to <code>Serial.println()</code> and make the return path
+  trivial to parse. Lesson 11's echo is the one that already uses <code>println</code>.</p>
+</div>
+
+<h2>Four things that will catch you</h2>
+
+<div class="warn">
+  <h4>1 · Lesson 12 turns any unknown byte into the balance angle</h4>
+  <p>Its parser ends with an <code>else</code> branch that assigns the raw received byte
+  straight into <code>angle0</code> — the mechanical balance setpoint. Send a command with a
+  trailing line ending and the car reads <code>10</code> (LF) or <code>13</code> (CR) as
+  "lean ten degrees", and lurches. Most BLE terminal apps append a line ending by default.
+  <strong>Send bare single characters with nothing after them.</strong> Lessons 11 and 13
+  have no such branch.</p>
+</div>
+
+<div class="warn">
+  <h4>2 · Most "HM-10" modules on sale are clones</h4>
   <p>CC41-A and MLT-BT05 boards are sold as HM-10 and behave like one for plain data, but
   their AT command set differs: genuine HM-10 takes <code>AT+NAMEmycar</code> with
   <strong>no</strong> CR/LF, clones take <code>AT+NAME=mycar</code> <strong>with</strong>
@@ -218,7 +268,7 @@ write a single character to <code>FFE1</code> can drive the car.</p>
 </div>
 
 <div class="warn">
-  <h4>2 · Get DOUT/DIN the right way round</h4>
+  <h4>3 · Get DOUT/DIN the right way round</h4>
   <p>An HM-10 usually ships as a bare 4–6 pin breakout, not an XBee carrier — so unless
   you have an XBee-format one, you are jumpering into the socket. The module's TX goes to
   the board's RX and vice versa; a straight-through wiring is silent, not broken-looking,
@@ -226,7 +276,7 @@ write a single character to <code>FFE1</code> can drive the car.</p>
 </div>
 
 <div class="warn">
-  <h4>3 · You still have to unplug it before flashing</h4>
+  <h4>4 · You still have to unplug it before flashing</h4>
   <p>The XBee socket sits on the hardware UART shared with the USB-serial chip. Swapping
   the radio changes nothing about that: leave the module in during upload and it still
   fails with <code>avrdude: stk500_getsync(): not in sync</code>. The serial monitor and
