@@ -1,0 +1,3427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KS0193 — Self-Balancing Car Workshop</title>
+<style>
+  :root{
+    --bg:#0B0F14; --panel:#121822; --panel-2:#0E141C; --border:#1F2B38;
+    --cyan:#4CE0D2; --amber:#FFB454; --danger:#FF5C5C; --green:#7BE07B;
+    --violet:#B08CFF; --pink:#FF8CC6;
+    --text:#E7F1F2; --muted:#7C93A0; --ghost:#2E4756;
+    --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  /* Light theme. Accents are darkened rather than reused: the neon values above are
+     tuned for a near-black background and fail contrast on white. */
+  :root[data-theme="light"]{
+    --bg:#F5F8FA; --panel:#FFFFFF; --panel-2:#EDF2F5; --border:#D0DCE4;
+    --cyan:#0B7C71; --amber:#9C5A00; --danger:#C1272D; --green:#2A7A37;
+    --violet:#5834B0; --pink:#AC2A77;
+    --text:#13202A; --muted:#55707F; --ghost:#8CA3B1;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);
+    line-height:1.55;padding:0 0 60px;}
+
+  .shell{max-width:1240px;margin:0 auto;padding:0 20px;display:grid;
+    grid-template-columns:210px minmax(0,1fr);gap:34px;align-items:start;}
+  .rail{position:sticky;top:0;max-height:100vh;overflow-y:auto;padding:22px 0 40px;}
+  main{min-width:0;padding-top:22px;}
+  @media(max-width:920px){
+    .shell{grid-template-columns:1fr;gap:0;}
+    .rail{position:static;max-height:none;border-bottom:1px solid var(--border);margin-bottom:18px;}
+  }
+
+  header.top{border-bottom:1px solid var(--border);}
+  .top-in{max-width:1240px;margin:0 auto;padding:30px 20px 18px;position:relative;}
+  /* ---- beginner / expert mode ---- */
+  :root[data-mode="beginner"] .only-expert{display:none !important;}
+  :root[data-mode="expert"]   .only-beginner{display:none !important;}
+
+  .modesel{display:flex;gap:5px;margin-top:16px;align-items:center;}
+  .modesel .ml{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    margin-right:4px;}
+  .modesel button{background:var(--panel);color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;font:inherit;font-size:11.5px;padding:6px 14px;cursor:pointer;}
+  .modesel button:hover{color:var(--cyan);border-color:var(--cyan);}
+  .modesel button.on{color:var(--bg);background:var(--amber);border-color:var(--amber);font-weight:700;}
+
+  /* ---- beginner "do this" panel ---- */
+  .nb{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:14px;margin:0 0 16px;}
+  @media(max-width:860px){.nb{grid-template-columns:1fr;}}
+  .nbcol{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:12px 15px;}
+  .nbcol.go{border-left:3px solid var(--green);}
+  .nbcol.see{border-left:3px solid var(--cyan);}
+  .nbcol.fix{border-left:3px solid var(--amber);}
+  .nbcol h6{margin:0 0 8px;font-size:11.5px;font-weight:400;letter-spacing:.04em;}
+  .nbcol.go h6{color:var(--green);} .nbcol.see h6{color:var(--cyan);} .nbcol.fix h6{color:var(--amber);}
+  .nbcol ol,.nbcol ul{margin:0;padding-left:19px;font-size:12.5px;}
+  .nbcol li{margin:6px 0;}
+  .nbcol p{margin:0;font-size:12.5px;}
+  .nbcol p + p{margin-top:7px;}
+  .nbcol b{color:var(--text);}
+
+  /* ---- before you start ---- */
+  .prep{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:0 0 18px;}
+  .prepcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .prepcard .big{font-size:26px;line-height:1;}
+  .prepcard h4{margin:8px 0 5px;font-size:12.5px;color:var(--amber);font-weight:400;}
+  .prepcard p{margin:0;font-size:12px;color:var(--muted);}
+  .prepcard p b{color:var(--text);font-weight:400;}
+
+  .themesel{position:absolute;top:26px;right:20px;display:flex;gap:4px;}
+  .themesel button{background:var(--panel);color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;font:inherit;font-size:10.5px;padding:5px 11px;cursor:pointer;}
+  .themesel button:hover{color:var(--cyan);border-color:var(--cyan);}
+  .themesel button.on{color:var(--bg);background:var(--cyan);border-color:var(--cyan);}
+  @media(max-width:620px){.themesel{position:static;margin-top:14px;}}
+  h1{margin:0 0 8px;font-size:22px;letter-spacing:.04em;}
+  h1 span{color:var(--amber);}
+  .tagline{color:var(--muted);font-size:13px;max-width:640px;margin:0;}
+  .kitfacts{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+  .fact{font-size:10.5px;letter-spacing:.04em;color:var(--muted);background:var(--panel);
+    border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+  .fact b{color:var(--text);font-weight:400;}
+
+  .rail h4{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    margin:18px 0 6px;font-weight:400;}
+  .rail h4:first-child{margin-top:0;}
+  .rail a{display:flex;gap:7px;align-items:baseline;text-decoration:none;color:var(--muted);
+    font-size:11.5px;padding:3px 6px;border-radius:5px;border-left:2px solid transparent;}
+  .rail a:hover{color:var(--text);background:var(--panel);}
+  .rail a.active{color:var(--cyan);border-left-color:var(--cyan);background:var(--panel);}
+  .rail a.done .num::before{content:"✓";color:var(--green);}
+  .rail a.done .num i{display:none;}
+  .num{font-style:normal;color:var(--border);min-width:16px;}
+  .rail a.active .num{color:var(--cyan);}
+  .progress{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);
+    font-size:10.5px;color:var(--muted);}
+  .bar{height:3px;background:var(--panel-2);border-radius:2px;margin-top:6px;overflow:hidden;}
+  .bar i{display:block;height:100%;width:0;background:var(--green);transition:width .25s;}
+
+  h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    margin:46px 0 14px;display:flex;align-items:center;gap:10px;font-weight:400;}
+  h2::after{content:"";flex:1;height:1px;background:var(--border);}
+  h2 em{font-style:normal;color:var(--amber);}
+  p{font-size:13px;margin:0 0 10px;}
+  a{color:var(--cyan);}
+  code{color:var(--amber);background:var(--panel-2);padding:1px 5px;border-radius:4px;font-size:.92em;}
+  strong{color:var(--text);}
+
+  /* ---- lesson card ---- */
+  .lesson{border:1px solid var(--border);border-radius:12px;background:var(--panel);
+    margin:0 0 18px;overflow:hidden;scroll-margin-top:12px;}
+  .lhead{display:flex;gap:13px;align-items:flex-start;padding:15px 20px;
+    border-bottom:1px solid var(--border);background:var(--panel-2);}
+  .badge{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--border);
+    display:grid;place-items:center;font-size:12.5px;color:var(--amber);background:var(--bg);}
+  .lhead h3{margin:0;font-size:14.5px;}
+  .lhead .goal{margin:2px 0 0;font-size:12px;color:var(--cyan);}
+  .tick{margin-left:auto;flex:none;display:flex;align-items:center;gap:5px;
+    font-size:10.5px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;}
+  .tick input{accent-color:var(--green);cursor:pointer;}
+  .lbody{padding:16px 20px 18px;}
+
+  /* ---- learn chips ---- */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;}
+  .chip{font-size:11px;color:var(--text);background:var(--panel-2);border:1px solid var(--border);
+    border-left:2px solid var(--cyan);border-radius:5px;padding:4px 9px;}
+
+  /* ---- two-column split ---- */
+  .split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;}
+  @media(max-width:820px){.split{grid-template-columns:1fr;}}
+
+  /* ---- widget frame ---- */
+  .w{border:1px solid var(--border);border-radius:10px;background:var(--panel-2);padding:12px 14px;}
+  .w canvas,.w svg{width:100%;display:block;}
+  .w canvas{border-radius:6px;background:var(--bg);border:1px solid var(--border);}
+  .wtitle{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 9px;display:flex;gap:8px;align-items:center;}
+  .wtitle b{color:var(--amber);font-weight:400;letter-spacing:0;text-transform:none;font-size:11px;}
+  .wtitle .live{margin-left:auto;font-size:9.5px;color:var(--green);letter-spacing:0;text-transform:none;}
+  .cap{font-size:10.5px;color:var(--muted);margin:8px 2px 0;}
+
+  .ctrls{display:flex;flex-wrap:wrap;gap:12px;margin-top:11px;align-items:flex-end;}
+  .ctrl{flex:1 1 150px;min-width:130px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:3px;}
+  .ctrl label b{color:var(--amber);font-weight:400;}
+  .ctrl input[type=range]{width:100%;accent-color:var(--cyan);}
+  .btns{display:flex;flex-wrap:wrap;gap:5px;}
+  .btns button{background:var(--panel);color:var(--muted);border:1px solid var(--border);
+    border-radius:5px;font:inherit;font-size:10.5px;padding:5px 10px;cursor:pointer;}
+  .btns button:hover{color:var(--cyan);border-color:var(--cyan);}
+  .btns button.on{color:var(--bg);background:var(--cyan);border-color:var(--cyan);}
+  .verdict{margin-top:10px;font-size:11.5px;padding:7px 11px;border-radius:6px;
+    background:var(--panel);border:1px solid var(--border);min-height:34px;}
+
+  .readout{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+  .ro{font-size:10.5px;color:var(--muted);background:var(--panel);border:1px solid var(--border);
+    border-radius:5px;padding:4px 9px;}
+  .ro b{color:var(--cyan);font-weight:400;}
+  .ro.g b{color:var(--green);} .ro.v b{color:var(--violet);} .ro.a b{color:var(--amber);}
+
+  /* ---- side column ---- */
+  .side h5{margin:0 0 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:400;}
+  .side + .side{margin-top:14px;}
+  .side ul{margin:0;padding-left:16px;font-size:11.5px;color:var(--muted);}
+  .side li{margin:4px 0;}
+  .side li b{color:var(--text);font-weight:400;}
+
+  .codewrap{position:relative;margin:0;}
+  pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    padding:11px 13px;overflow-x:auto;font-size:11.5px;line-height:1.55;margin:0;}
+  pre code{background:none;padding:0;color:var(--text);}
+  .cm{color:var(--muted);} .kw{color:var(--pink);} .nm{color:var(--cyan);}
+  .copy{position:absolute;top:6px;right:6px;background:var(--panel);color:var(--muted);
+    border:1px solid var(--border);border-radius:5px;font:inherit;font-size:9.5px;
+    padding:2px 7px;cursor:pointer;opacity:0;transition:opacity .15s;}
+  .codewrap:hover .copy{opacity:1;}
+  .copy.done{color:var(--green);border-color:var(--green);}
+
+  .pins{display:flex;flex-wrap:wrap;gap:3px;margin:0;}
+  .pin{font-size:9.5px;padding:3px 5px;border-radius:4px;border:1px solid var(--border);
+    color:var(--border);background:var(--bg);min-width:26px;text-align:center;}
+  .pin.on{color:var(--bg);font-weight:700;border-color:transparent;}
+  .pin.on.MOT,.pin.on.PWM{background:var(--cyan);}
+  .pin.on.ENC{background:var(--green);} .pin.on.BT{background:var(--violet);}
+  .pin.on.BUZ,.pin.on.BTN{background:var(--amber);} .pin.on.I2C{background:var(--pink);}
+  .legend{display:flex;flex-wrap:wrap;gap:11px;margin:9px 0 0;font-size:10px;color:var(--muted);}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;}
+
+  .note{border-left:3px solid var(--amber);padding:9px 13px;background:var(--panel-2);
+    border-radius:0 8px 8px 0;font-size:11.5px;margin:12px 0 0;}
+  .note.bad{border-left-color:var(--danger);} .note.good{border-left-color:var(--green);}
+  .note b{color:var(--amber);} .note.bad b{color:var(--danger);} .note.good b{color:var(--green);}
+
+  .why{margin-top:14px;padding:11px 14px;border-radius:8px;background:var(--panel-2);
+    border:1px solid var(--border);border-left:3px solid var(--violet);font-size:12px;}
+  .why h5{margin:0 0 5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--violet);font-weight:400;}
+  .why p{margin:0;font-size:12px;}
+  .why p + p{margin-top:7px;}
+
+  .run{margin-top:13px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;
+    font-size:10.5px;color:var(--muted);}
+  .run code{font-size:11px;}
+
+  /* one-sentence idea box */
+  .idea{margin:0 0 16px;padding:14px 18px;border-radius:10px;background:var(--panel-2);
+    border:1px solid var(--border);border-left:3px solid var(--green);}
+  .idea h5{margin:0 0 7px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--green);font-weight:400;}
+  .idea p{margin:0;font-size:14px;line-height:1.65;}
+  .idea p + p{margin-top:8px;}
+  .idea b{color:var(--green);}
+
+  /* step numbering for the walkthrough widgets */
+  .stepno{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;
+    background:var(--green);color:var(--bg);font-size:11px;font-weight:700;margin-right:3px;}
+
+  details{margin-top:14px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);}
+  details summary{cursor:pointer;padding:11px 15px;font-size:11.5px;color:var(--cyan);
+    list-style:none;user-select:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸ ";color:var(--muted);}
+  details[open] summary::before{content:"▾ ";}
+  details .dbody{padding:0 15px 15px;font-size:12px;}
+  details .dbody p{font-size:12px;}
+
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;margin:8px 0 4px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{color:var(--muted);font-weight:400;letter-spacing:.06em;text-transform:uppercase;font-size:9.5px;}
+  tr.hi td{background:rgba(76,224,210,.07);}
+
+  .stage{display:flex;gap:12px;align-items:center;border:1px dashed var(--border);border-radius:10px;
+    padding:11px 16px;margin:0 0 16px;background:linear-gradient(180deg,var(--panel-2),transparent);}
+  .stage .sl{font-size:26px;color:var(--border);}
+  .stage h3{margin:0 0 2px;font-size:12.5px;color:var(--amber);}
+  .stage p{margin:0;font-size:11.5px;color:var(--muted);}
+
+  .roadmap{border:1px solid var(--border);border-radius:12px;background:var(--panel-2);padding:6px;}
+  .roadmap svg{width:100%;height:auto;display:block;}
+
+  footer{max-width:1240px;margin:56px auto 0;padding:20px 20px 0;border-top:1px solid var(--border);
+    font-size:11px;color:var(--muted);display:flex;gap:15px;align-items:center;flex-wrap:wrap;}
+  footer img{height:32px;filter:invert(1);opacity:.55;}
+  :root[data-theme="light"] footer img{filter:none;opacity:.8;}
+  footer .fspace{flex:1;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="themesel">
+      <button data-set-theme="dark">◐ dark</button>
+      <button data-set-theme="light">◑ light</button>
+    </div>
+    <h1>🛴 KS0193 — <span>SELF-BALANCING CAR</span></h1>
+    <p class="tagline only-beginner">A machine that is always falling over, and always catching
+    itself just in time. You are going to build it in thirteen steps. Do them in order — each one
+    adds a piece, and the last one only works because you did the twelve before it.</p>
+    <p class="tagline only-expert">A machine that is always falling and always catching itself.
+    Thirteen sketches, each adding one part. Play with every idea here before you touch the car.</p>
+    <div class="modesel">
+      <span class="ml">I am</span>
+      <button data-set-mode="beginner">🌱 new to this</button>
+      <button data-set-mode="expert">🔬 show me everything</button>
+    </div>
+    <div class="kitfacts">
+      <span class="fact">Board <b>Arduino UNO</b></span>
+      <span class="fact">Sensor <b>MPU6050</b></span>
+      <span class="fact">Driver <b>TB6612FNG</b></span>
+      <span class="fact">Radio <b>HC-06</b></span>
+      <span class="fact">Serial <b>9600 baud</b></span>
+      <span class="fact">Loop <b>every 5 ms</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+<nav class="rail" id="rail">
+  <h4>A · Move</h4>
+  <a href="#l01"><span class="num"><i>01</i></span> Button &amp; buzzer</a>
+  <a href="#l02"><span class="num"><i>02</i></span> Motors</a>
+  <a href="#l03"><span class="num"><i>03</i></span> Encoders</a>
+  <a href="#l04"><span class="num"><i>04</i></span> Timer</a>
+  <a href="#l05"><span class="num"><i>05</i></span> Bluetooth</a>
+  <h4>B · Sense</h4>
+  <a href="#l06"><span class="num"><i>06</i></span> Raw sensor</a>
+  <a href="#l07"><span class="num"><i>07</i></span> Angle</a>
+  <a href="#l08"><span class="num"><i>08</i></span> Kalman</a>
+  <h4>C · Balance</h4>
+  <a href="#l09"><span class="num"><i>09</i></span> Upright loop</a>
+  <a href="#l10"><span class="num"><i>10</i></span> Speed loop</a>
+  <h4>D · Drive</h4>
+  <a href="#l11"><span class="num"><i>11</i></span> Steering</a>
+  <a href="#l12"><span class="num"><i>12</i></span> Tune it</a>
+  <a href="#l13"><span class="num"><i>13</i></span> Balance point</a>
+  <h4>Everything at once</h4>
+  <a href="#sim"><span class="num"><i>▶</i></span> The simulator</a>
+  <h4>Reference</h4>
+  <a href="#pinmap"><span class="num"><i>·</i></span> Pin map</a>
+  <a href="#gains"><span class="num"><i>·</i></span> Gains</a>
+  <a href="#trouble"><span class="num"><i>·</i></span> Fixes</a>
+  <div class="progress">
+    <span id="ptext">0 / 13 done</span>
+    <div class="bar"><i id="pbar"></i></div>
+  </div>
+</nav>
+
+<main>
+
+<div class="roadmap">
+<svg viewBox="0 0 900 168" role="img" aria-label="Roadmap of the thirteen lessons">
+  <defs>
+    <linearGradient id="gline" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="var(--border)"/><stop offset=".45" stop-color="var(--cyan)"/>
+      <stop offset="1" stop-color="var(--amber)"/>
+    </linearGradient>
+  </defs>
+  <path d="M40 132 C 200 130, 300 120, 400 96 C 500 72, 560 44, 860 30"
+        fill="none" stroke="url(#gline)" stroke-width="2.5" opacity=".55"/>
+  <g font-family="monospace" font-size="9" fill="var(--muted)">
+    <text x="40" y="158">A · make it move</text>
+    <text x="300" y="158">B · make it sense</text>
+    <text x="500" y="158">C · make it balance</text>
+    <text x="720" y="158">D · make it obey</text>
+  </g>
+  <line x1="285" y1="18" x2="285" y2="140" stroke="var(--border)" stroke-dasharray="3 4"/>
+  <line x1="480" y1="18" x2="480" y2="140" stroke="var(--border)" stroke-dasharray="3 4"/>
+  <line x1="700" y1="18" x2="700" y2="140" stroke="var(--border)" stroke-dasharray="3 4"/>
+  <g id="rmnodes"></g>
+</svg>
+</div>
+
+<div class="only-beginner">
+<h2>Before you touch anything — <em>the four things that ruin a first session</em></h2>
+<div class="prep">
+  <div class="prepcard">
+    <div class="big">🔌</div>
+    <h4>Unplug the blue Bluetooth board before EVERY upload</h4>
+    <p>It sits on the same two wires the USB cable uses. Leave it in and the upload fails with a
+    confusing error. <b>Pull it out, upload, push it back in.</b> You will forget this at least once.</p>
+  </div>
+  <div class="prepcard">
+    <div class="big">🔋</div>
+    <h4>The battery switch must be ON</h4>
+    <p>USB powers the brain but <b>not the motors</b>. If your program runs and the wheels stay dead,
+    this is almost always why.</p>
+  </div>
+  <div class="prepcard">
+    <div class="big">✋</div>
+    <h4>Hold the car still and upright when you switch it on</h4>
+    <p>In its first second the car measures which way is up. <b>Move it during that second and it
+    learns the wrong answer</b> — and then falls over all session.</p>
+  </div>
+  <div class="prepcard">
+    <div class="big">📦</div>
+    <h4>Wheels off the table</h4>
+    <p>From step 9 on, the motors start the instant it powers up. Stand the car on a box, or hold it.
+    <b>Never flash it lying on the floor next to your foot.</b></p>
+  </div>
+</div>
+<div class="note"><b>How to run any step.</b> Open a terminal in this folder and type
+<code>./launch.sh</code>. Pick the step number, then choose <b>5</b> to send it to the car, or
+<b>7</b> to read what the car is saying. That is the whole tool.</div>
+</div>
+
+<!-- ==================== STAGE A ==================== -->
+<h2>Stage A — <em>make it move</em></h2>
+<div class="stage"><span class="sl">A</span><div>
+  <h3>Five things that must work before balancing is even thinkable</h3>
+  <p>None of these balance anything. They exist so that later, when the car falls over, you already know what is <em>not</em> to blame.</p>
+</div></div>
+
+<!-- 01 -->
+<section class="lesson" id="l01" data-pins="11,13">
+  <div class="lhead">
+    <div class="badge">01</div>
+    <div><h3>Button &amp; buzzer</h3><p class="goal">Press the button → two short ticks.</p></div>
+    <label class="tick"><input type="checkbox" data-id="01"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Plug the USB cable from your computer into the car.</li>
+        <li>Run <code>./launch.sh</code>, pick step <b>1</b>, then choose <b>5</b>.</li>
+        <li>Press the little button on the board.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>Two short beeps, every time you press. Nothing else at all — no lights, no movement. That is exactly right.</p><p>You have just proved the whole chain works: your computer can reach the car, and the car can act.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>No beep → is the battery switch ON?</li>
+        <li>Beeping non-stop → the button is reading upside down, ask for help.</li>
+        <li>Upload failed → the blue Bluetooth board is still plugged in.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">digital in &amp; out</span>
+      <span class="chip">active-low button</span>
+      <span class="chip">debouncing</span>
+      <span class="chip">making a tone by hand</span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>a buzzer has no oscillator — you make the wave yourself</b><span class="live" id="bz-live"></span></p>
+        <canvas id="cv-buzz" width="1100" height="230"></canvas>
+        <div class="ctrls">
+          <div class="ctrl">
+            <label><span>half-period (delay)</span><b id="v-bzms">1 ms</b></label>
+            <input type="range" id="s-bzms" min="1" max="10" step="1" value="1">
+          </div>
+          <div class="btns"><button id="b-bzpress">press the button</button></div>
+        </div>
+        <p class="cap">The sketch toggles D11 every 1 ms. Two toggles make one cycle → 500 Hz. Slide it and the pitch drops.</p>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">if</span>(digitalRead(btn)==0){ <span class="cm">// pressed</span>
+  delay(10);              <span class="cm">// settle</span>
+  <span class="kw">if</span>(digitalRead(btn)==0)
+    buzzer();
+}
+
+<span class="kw">for</span>(i=0;i&lt;50;i++){
+  digitalWrite(buz,HIGH); delay(1);
+  digitalWrite(buz,LOW);  delay(1);
+}</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li><b>Two ticks</b> per press.</li>
+            <li>Continuous buzz → button reads inverted.</li>
+            <li>Silence → power or wiring, not code.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>Proof of life. And this same buzzer returns in <a href="#l13">lesson 13</a> as the beep that
+      confirms the car has learned its balance point — the last sketch reuses the first one's output.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 1 → option 5</code></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="lesson" id="l02" data-pins="6,7,8,9,10,12">
+  <div class="lhead">
+    <div class="badge">02</div>
+    <div><h3>TB6612 motors</h3><p class="goal">Two pins choose the direction, one pin chooses the speed.</p></div>
+    <label class="tick"><input type="checkbox" data-id="02"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li><b>Stand the car on a box</b> so the wheels spin in the air.</li>
+        <li>Switch the battery pack ON.</li>
+        <li>Flash step <b>2</b>.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>The wheels turn forward, stop, turn backward, then one goes one way and one the other. Over and over, by itself.</p><p>Nobody is steering. The car is just running a list.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Wheels dead → battery switch. USB alone is not enough.</li>
+        <li>One wheel turns the wrong way → its two wires are swapped.</li>
+        <li>A wheel hums but does not move → it needs a bigger push to get going. Normal.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">H-bridge</span>
+      <span class="chip">direction ≠ speed</span>
+      <span class="chip">PWM is not analog</span>
+      <span class="chip">sign → direction, size → PWM</span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>flip the two direction pins, then push the speed</b></p>
+        <svg id="sv-hb" viewBox="0 0 560 230"></svg>
+        <div class="ctrls">
+          <div class="btns">
+            <button data-hb="fwd" class="on">R1=1 R2=0</button>
+            <button data-hb="rev">R1=0 R2=1</button>
+            <button data-hb="coast">R1=0 R2=0</button>
+            <button data-hb="brake">R1=1 R2=1</button>
+          </div>
+          <div class="ctrl">
+            <label><span>analogWrite(PWM_R, …)</span><b id="v-hb">150</b></label>
+            <input type="range" id="s-hb" min="0" max="255" step="1" value="150">
+          </div>
+        </div>
+        <div class="readout" id="ro-hb"></div>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">const int</span> right_R1=8, right_R2=12;
+<span class="kw">const int</span> PWM_R=10;
+
+digitalWrite(right_R1,HIGH);
+digitalWrite(right_R2,LOW);
+analogWrite (PWM_R,150);</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li>One wheel backwards → <b>swap its two direction pins</b>.</li>
+            <li>Under ~40 PWM a wheel hums but will not turn. That is stiction.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="note bad"><b>Lift the wheels.</b> This sketch drives the motors the instant the board boots. Battery pack ON — USB alone will not turn them.</div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>From lesson 09 on, no code ever writes to a motor pin again — a control loop does it, inside
+      an interrupt. This is your only chance to see the raw mechanism on its own.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 2</code></div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="lesson" id="l03" data-pins="4,5,6,7,8,9,10,12">
+  <div class="lhead">
+    <div class="badge">03</div>
+    <div><h3>Hall encoders</h3><p class="goal">Turn wheel rotation into a number you can count.</p></div>
+    <label class="tick"><input type="checkbox" data-id="03"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>3</b>.</li>
+        <li>Choose <b>7</b> to open the serial monitor.</li>
+        <li>Turn one wheel <b>slowly, by hand</b>.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>A number that climbs while you turn, and freezes the moment you stop.</p><p>The car can now feel how far it has rolled. It could not before.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Number never changes → an encoder wire is loose.</li>
+        <li>Nothing in the monitor at all → the speed must be 9600.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">magnet + Hall sensor = pulses</span>
+      <span class="chip">commanding ≠ knowing</span>
+      <span class="chip">counting edges</span>
+      <span class="chip">feedback</span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>spin the wheel and watch the pulses pile up</b><span class="live">● live</span></p>
+        <canvas id="cv-enc" width="1100" height="250"></canvas>
+        <div class="ctrls">
+          <div class="ctrl">
+            <label><span>wheel speed</span><b id="v-enc">medium</b></label>
+            <input type="range" id="s-enc" min="0" max="100" step="1" value="38">
+          </div>
+          <div class="btns"><button id="b-encreset">reset count</button></div>
+        </div>
+        <div class="readout" id="ro-enc"></div>
+        <p class="cap">Slow the wheel to zero: the count freezes. The pulse train <em>is</em> the measurement — no pulses, no idea where the car is.</p>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">const int</span> PinA_left  = 5;
+<span class="kw">const int</span> PinA_right = 4;
+
+<span class="cm">// lesson 03: polled in loop()</span>
+<span class="cm">// lesson 09+: moved into an</span>
+<span class="cm">// interrupt, so no pulse is</span>
+<span class="cm">// lost while the maths runs</span></code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li>Turn a wheel by hand — the count should rise <b>smoothly</b>.</li>
+            <li>Never changes → encoder power or signal wire.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>Balancing needs only the angle. <em>Staying in one place</em> needs to know how far the wheels
+      rolled — that is <a href="#l10">lesson 10</a>, and it is impossible without this.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 3 → option 7</code></div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="lesson" id="l04" data-pins="">
+  <div class="lhead">
+    <div class="badge">04</div>
+    <div><h3>Timer interrupt</h3><p class="goal">Make something happen at an exact, unvarying rate.</p></div>
+    <label class="tick"><input type="checkbox" data-id="04"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>4</b>.</li>
+        <li>Open the serial monitor (<b>7</b>).</li>
+        <li>Watch the rhythm, not the words.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>A message arriving on a perfectly steady beat. Like a metronome that never slips.</p><p>Boring to look at, and it is the reason everything after this works.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Nothing appears → serial monitor speed must be 9600.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">hardware timer</span>
+      <span class="chip">interrupt service routine</span>
+      <span class="chip"><code>delay()</code> is not a clock</span>
+      <span class="chip">fixed <code>dt</code></span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>same target rate, two ways — watch them separate</b><span class="live">● live</span></p>
+        <canvas id="cv-tim" width="1100" height="220"></canvas>
+        <div class="ctrls">
+          <div class="ctrl">
+            <label><span>how much work loop() does</span><b id="v-tim">some</b></label>
+            <input type="range" id="s-tim" min="0" max="100" step="1" value="45">
+          </div>
+          <div class="btns"><button id="b-timreset">restart</button></div>
+        </div>
+        <div class="readout" id="ro-tim"></div>
+        <p class="cap">Top: a timer interrupt. Bottom: <code>delay()</code> plus whatever else the loop had to do. Add work and the bottom row drifts — the top never does.</p>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">#include</span> &lt;MsTimer2.h&gt;
+
+MsTimer2::set(100, inter);
+MsTimer2::start();
+
+<span class="cm">// lesson 09 onward: set(5, …)</span>
+<span class="cm">// = 200 times a second</span></code></pre></div>
+        </div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li>Add a <code>delay(500)</code> to <code>loop()</code> — the interrupt keeps its rhythm anyway.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="note"><b>Timer2 is not free.</b> <code>MsTimer2</code> takes Timer2, which also generates PWM for <code>D3</code> and <code>D11</code>. From lesson 09 on, <code>analogWrite()</code> on those two pins does nothing. <code>digitalWrite()</code> still works — which is exactly why the buzzer on D11 still beeps in lesson 13.</div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>The Kalman filter in <a href="#l08">lesson 08</a> contains <code>float dt = 0.005;</code>.
+      That number is not measured — it is <strong>assumed</strong>. Every integration in the filter and
+      every derivative in the PID is wrong if the loop does not truly run every 5 ms. This is where
+      that promise comes from.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 4 → option 7</code></div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="lesson" id="l05" data-pins="0,1,6,7,8,9,10,12">
+  <div class="lhead">
+    <div class="badge">05</div>
+    <div><h3>Bluetooth</h3><p class="goal">One letter over the air becomes movement.</p></div>
+    <label class="tick"><input type="checkbox" data-id="05"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li><b>Unplug the blue Bluetooth board.</b> Flash step <b>5</b>. Plug it back in.</li>
+        <li>On your phone, pair with <b>HC-06</b>, code <b>1234</b>.</li>
+        <li>Open the app and press the arrows. Keep the wheels in the air.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>The wheels obey your phone. Forward, back, left, right, stop.</p><p>Still no balancing. You are just talking to the car from a distance.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Upload failed → the Bluetooth board was still plugged in.</li>
+        <li>Phone cannot find it → its light must be <b>blinking</b>. Solid means already connected.</li>
+        <li>Paired but nothing moves → battery switch.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">UART = just bytes</span>
+      <span class="chip">one-letter protocol</span>
+      <span class="chip">HC-06 is transparent</span>
+      <span class="chip">D0/D1 clash with USB</span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>send a letter and follow it through the wires</b></p>
+        <svg id="sv-bt" viewBox="0 0 560 210"></svg>
+        <div class="ctrls">
+          <div class="btns" id="bt-keys">
+            <button data-k="F">F</button><button data-k="B">B</button>
+            <button data-k="L">L</button><button data-k="R">R</button>
+            <button data-k="S">S</button><button data-k="Z">Z (unknown)</button>
+          </div>
+        </div>
+        <div class="readout" id="ro-bt"></div>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">if</span>(Serial.available()){
+  val = Serial.read();
+  <span class="kw">switch</span>(val){
+    <span class="kw">case</span> <span class="nm">'F'</span>: front(); <span class="kw">break</span>;
+    <span class="kw">case</span> <span class="nm">'B'</span>: back();  <span class="kw">break</span>;
+    <span class="kw">case</span> <span class="nm">'L'</span>: left();  <span class="kw">break</span>;
+    <span class="kw">case</span> <span class="nm">'R'</span>: right(); <span class="kw">break</span>;
+    <span class="kw">case</span> <span class="nm">'S'</span>: Stop();  <span class="kw">break</span>;
+  }
+}</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side"><h5>Defaults</h5>
+          <ul><li>Name <b>HC-06</b>, PIN <b>1234</b>, <b>9600</b> baud.</li>
+          <li>LED blinking = free. LED solid = paired.</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="note bad"><b>Unplug the HC-06 before every upload.</b> It sits on D0/D1 — the same UART the USB port uses. Leave it in and the upload dies with a sync error. The serial monitor shares that UART too, so phone and monitor can never both be connected.</div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>Debugging a radio on a machine that is simultaneously trying not to fall over is miserable.
+      Get it working flat on the table, once. The same five letters survive to lesson 13 — but by then
+      they change a <em>target</em>, not a motor.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 5</code></div>
+  </div>
+</section>
+
+<!-- ==================== STAGE B ==================== -->
+<h2>Stage B — <em>make it sense</em></h2>
+<div class="stage"><span class="sl">B</span><div>
+  <h3>From raw registers to an angle you can trust</h3>
+  <p>One sensor, three sketches, and a steadily better answer to one question: how far is it leaning <em>right now</em>?</p>
+</div></div>
+
+<!-- 06 -->
+<section class="lesson" id="l06" data-pins="A4,A5">
+  <div class="lhead">
+    <div class="badge">06</div>
+    <div><h3>MPU6050 — raw</h3><p class="goal">Talk to the chip by hand, no library in the way.</p></div>
+    <label class="tick"><input type="checkbox" data-id="06"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>6</b> and open the monitor.</li>
+        <li>Hold the car in your hands.</li>
+        <li>Tilt it slowly, one way then the other.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>Six big numbers, twitching constantly, changing as you tilt.</p><p>They are not degrees. They are raw readings — the sensor has no idea what an angle is yet.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>All zeros → the two sensor wires (A4 and A5).</li>
+        <li>Numbers twitch even when perfectly still → normal. That twitch becomes a real problem in step 8.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">I²C address 0x68</span>
+      <span class="chip">registers</span>
+      <span class="chip">full-scale ranges</span>
+      <span class="chip">raw ints, not degrees</span>
+    </div>
+
+    <div class="split">
+      <div class="w">
+        <p class="wtitle">Try it <b>three writes wake the chip and set its ranges</b></p>
+        <svg id="sv-i2c" viewBox="0 0 560 240"></svg>
+        <div class="ctrls">
+          <div class="btns" id="i2c-keys">
+            <button data-r="6B" class="on">0x6B — wake up</button>
+            <button data-r="1B">0x1B — gyro range</button>
+            <button data-r="1C">0x1C — accel range</button>
+          </div>
+        </div>
+        <div class="readout" id="ro-i2c"></div>
+      </div>
+
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code>Wire.beginTransmission(0b1101000);
+Wire.write(0x6B);        <span class="cm">// power mgmt</span>
+Wire.write(0b00000000);  <span class="cm">// clear SLEEP</span>
+Wire.endTransmission();</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li>An axis reads about <b>±16384</b> when it points straight down. That is 1 g at ±2 g range.</li>
+            <li>All zeros → I²C wiring on A4/A5.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>So the library in the next lesson is understood, not trusted — it does exactly this. And
+      because those range settings are what make the next lesson's magic number right:
+      <strong>±250 °/s full scale is why the gyro gets divided by 131.</strong></p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 6 → option 7</code></div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="lesson" id="l07" data-pins="A4,A5">
+  <div class="lhead">
+    <div class="badge">07</div>
+    <div><h3>Angle</h3><p class="goal">Gravity points down. Where is <em>down</em>, relative to the car?</p></div>
+    <label class="tick"><input type="checkbox" data-id="07"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>7</b> and open the monitor.</li>
+        <li>Tilt the car slowly. Watch the number follow you.</li>
+        <li>Now <b>tap the car sharply without tilting it at all</b>.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>Tilting: a number in degrees that tracks you nicely.</p><p>Tapping: the number <b>jumps by tens of degrees</b> — even though you did not tilt it one bit. Remember that. Step 8 exists because of it.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>The number drifts on its own → that is the other sensor's fault, and also step 8's job.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">gravity is a vector</span>
+      <span class="chip"><code>atan2(ay, az)</code></span>
+      <span class="chip">gyro measures rate, not angle</span>
+      <span class="chip">131 counts per °/s</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">Try it <b>tilt the car — watch the numbers the sketch actually reads</b></p>
+      <svg id="sv-tilt" viewBox="0 0 900 300"></svg>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>tilt the car</span><b id="v-tilt">0°</b></label>
+          <input type="range" id="s-tilt" min="-60" max="60" step="1" value="18">
+        </div>
+        <div class="btns"><button id="b-tap">tap it (no tilt!)</button></div>
+      </div>
+      <div class="readout" id="ro-tilt"></div>
+      <p class="cap">The green arrow is gravity. The two cyan arrows are its shadow on the car's own axes — those are <code>ay</code> and <code>az</code>. <code>atan2</code> turns that pair into an angle.</p>
+    </div>
+
+    <div class="note bad"><b>Press "tap it".</b> The car did not rotate at all, yet the angle jumps by many degrees. The accelerometer cannot tell a shove from gravity. <em>That</em> is the problem lesson 08 solves.</div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="tablewrap"><table>
+          <tr><th></th><th>Accelerometer angle</th><th>Gyroscope rate</th></tr>
+          <tr><td>Right on average</td><td style="color:var(--green)">yes</td><td style="color:var(--green)">yes</td></tr>
+          <tr><td>Smooth</td><td style="color:var(--danger)">no — very noisy</td><td style="color:var(--green)">yes</td></tr>
+          <tr><td>Stable over minutes</td><td style="color:var(--green)">yes</td><td style="color:var(--danger)">no — it drifts</td></tr>
+          <tr><td>Fooled by</td><td>any shove or acceleration</td><td>nothing — but error piles up</td></tr>
+        </table></div>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code>Angle  = -atan2(ay,az)*(180/PI);
+Gyro_x = -gx / 131;</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>You cannot appreciate a filter until you have watched both raw signals misbehave, each in its own way.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 7 → tilt and tap the real car</code></div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="lesson" id="l08" data-pins="A4,A5">
+  <div class="lhead">
+    <div class="badge">08</div>
+    <div><h3>Kalman filter</h3><p class="goal">Two flawed sensors, one good answer.</p></div>
+    <label class="tick"><input type="checkbox" data-id="08"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>8</b> and open the monitor.</li>
+        <li>Do the exact same tap test as step 7.</li>
+        <li>Compare the two numbers on screen.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>Two numbers now. The old one still leaps about when you tap. The new one <b>barely twitches</b>.</p><p>Same sensor, same tap. The difference is entirely in the maths.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Both numbers jump → you are still running step 7.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">predict with the gyro</span>
+      <span class="chip">correct with the accelerometer</span>
+      <span class="chip">constants = how much you trust each</span>
+      <span class="chip">it learns the gyro's drift</span>
+    </div>
+
+    <div class="idea">
+      <h5>The whole idea, in three sentences</h5>
+      <p>You have two informants. One is <b>jumpy but honest</b>: ask him where you are and he shouts
+      a different answer every second, but on average he is right. The other is <b>calm but a liar</b>:
+      he tells you smoothly how much you just turned, and he is superb at it — except he lies by a tiny
+      constant amount, and those tiny lies pile up until you are completely lost.</p>
+      <p>The filter does what a sensible person would do. <b>Follow the calm one second by second.</b>
+      <b>Use the jumpy one to slowly fix your position.</b> And — the clever bit —
+      <b>keep a running note of exactly how much the calm one lies</b>, so you can subtract it.</p>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">The two informants <b>each one is useless alone, and they fail in opposite ways</b></p>
+      <svg id="sv-k0" viewBox="0 0 900 300"></svg>
+    </div>
+
+    <div class="w" style="margin-top:14px">
+      <p class="wtitle"><span class="stepno">1</span> <b>When two people tell you different things, who do you believe?</b></p>
+      <svg id="sv-k1" viewBox="0 0 900 250"></svg>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>how sure the calm one is</span><b id="v-k1p">…</b></label>
+          <input type="range" id="s-k1p" min="2" max="100" step="1" value="25">
+        </div>
+        <div class="ctrl">
+          <label><span>how jumpy the jumpy one is</span><b id="v-k1r">…</b></label>
+          <input type="range" id="s-k1r" min="2" max="100" step="1" value="70">
+        </div>
+      </div>
+      <div class="verdict" id="vd-k1"></div>
+      <p class="cap">That percentage has a name: the <b>Kalman gain</b>. It is not a setting you choose — the filter recomputes it every 5 ms from how sure it currently is.</p>
+    </div>
+
+    <div class="w" style="margin-top:14px">
+      <p class="wtitle"><span class="stepno">2</span> <b>Guessing makes you less sure. Looking makes you more sure.</b></p>
+      <svg id="sv-k2" viewBox="0 0 900 280"></svg>
+      <div class="ctrls">
+        <div class="btns">
+          <button id="b-k2step">next half-step ▸</button>
+          <button id="b-k2auto">play</button>
+          <button id="b-k2reset">start over</button>
+        </div>
+      </div>
+      <div class="verdict" id="vd-k2"></div>
+      <p class="cap">The cloud is how unsure the filter is. Watch it breathe: it puffs up on every <span style="color:var(--violet)">PREDICT</span> and gets squeezed on every <span style="color:var(--red)">CORRECT</span>. That breathing is the entire <code>P[2][2]</code> matrix in the code.</p>
+    </div>
+
+    <div class="w" style="margin-top:14px">
+      <p class="wtitle"><span class="stepno">3</span> <b>The clever bit: it works out how much the gyro lies</b><span class="live">● live</span></p>
+      <canvas id="cv-k3" width="1200" height="300"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>the gyro's secret lie</span><b id="v-k3">+0.80 °/s</b></label>
+          <input type="range" id="s-k3" min="-150" max="150" step="5" value="80">
+        </div>
+        <div class="btns"><button id="b-k3reset">start over</button></div>
+      </div>
+      <div class="verdict" id="vd-k3"></div>
+      <p class="cap">The car is <b>perfectly still the whole time</b>. The violet line is what you get by simply adding up the gyro. The cyan line is the filter. The number it discovers is <code>q_bias</code> — one line of code, line 97.</p>
+    </div>
+
+    <div class="w" style="margin-top:14px">
+      <p class="wtitle"><span class="stepno">4</span> <b>All of it together — the same real tilt, measured three ways</b><span class="live">● live</span></p>
+      <canvas id="cv-fuse" width="1200" height="330"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>how much you trust the accelerometer</span><b id="v-fuse">balanced</b></label>
+          <input type="range" id="s-fuse" min="1" max="100" step="1" value="22">
+        </div>
+        <div class="btns">
+          <button id="b-fusetap">tap the car</button>
+          <button id="b-fusereset">restart</button>
+        </div>
+      </div>
+      <div class="verdict" id="vd-fuse"></div>
+      <p class="cap">Drag the slider to the far left and the output follows the gyro and slides away. Far right and it copies the accelerometer's noise. The kit sits near the middle.</p>
+    </div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="tablewrap only-expert"><table>
+          <tr><th>Constant</th><th>Value</th><th>Means</th></tr>
+          <tr><td><code>Q_angle</code></td><td>0.001</td><td>we assume little noise in the gyro prediction → trust it</td></tr>
+          <tr><td><code>Q_gyro</code></td><td>0.003</td><td>how fast the drift estimate may change</td></tr>
+          <tr><td><code>R_angle</code></td><td>0.5</td><td>we assume lots of accelerometer noise → distrust it</td></tr>
+          <tr><td><code>dt</code></td><td>0.005</td><td>the loop period — guaranteed by lesson 04</td></tr>
+        </table></div>
+        <p class="cap"><code>R_angle</code> is 500× <code>Q_angle</code>. That ratio is the whole idea: follow the gyro moment to moment, let the accelerometer nudge it slowly back to truth.</p>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code>angle    += (gyro_m-q_bias)*dt;
+angle_err = angle_m - angle;
+<span class="cm">// ...covariance -> K_0, K_1</span>
+angle    += K_0 * angle_err;
+q_bias   += K_1 * angle_err;</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+      </div>
+    </div>
+
+    <details class="only-expert">
+      <summary>Open the engine — every line of <code>Kalman_Filter()</code>, explained</summary>
+      <div class="dbody">
+        <p><b>It tracks two numbers, not one.</b> <code>angle</code> (the tilt) and <code>q_bias</code>
+        (how much the gyro lies). That is why <code>P</code> is a 2×2 matrix: one uncertainty for each.</p>
+
+        <div class="tablewrap"><table>
+          <tr><th>Line</th><th>Code</th><th>In plain words</th></tr>
+          <tr><td>67</td><td><code>angle += (gyro_m - q_bias)*dt</code></td><td><b>Predict.</b> Move the estimate at the rate the gyro reports, minus the lie we have learned so far.</td></tr>
+          <tr><td>68</td><td><code>angle_err = angle_m - angle</code></td><td>How much the accelerometer disagrees. This one number drives every correction below.</td></tr>
+          <tr><td>70–78</td><td><code>Pdot[…]</code>, <code>P[…] += Pdot*dt</code></td><td><b>Get less sure.</b> This is Ṗ = A·P + P·Aᵀ + Q written out by hand. Pure guessing costs confidence.</td></tr>
+          <tr><td>84</td><td><code>E = R_angle + P[0][0]</code></td><td>My uncertainty + the sensor's noise. The denominator of the gain.</td></tr>
+          <tr><td>86–87</td><td><code>K_0 = P[0][0]/E</code></td><td><b>The gain.</b> Sure of myself → K≈0, ignore the accelerometer. Lost → K≈1, jump to it.</td></tr>
+          <tr><td>92–95</td><td><code>P -= K*C*P</code></td><td><b>Get more sure.</b> A measurement arrived; shrink the cloud.</td></tr>
+          <tr><td>97</td><td><code>q_bias += K_1*angle_err</code></td><td><b>Learn the lie.</b> A disagreement that never goes away can only be gyro drift.</td></tr>
+          <tr><td>98</td><td><code>angle_speed = gyro_m - q_bias</code></td><td>The de-biased rate — this is what lesson 09's D term uses.</td></tr>
+          <tr><td>99</td><td><code>angle += K_0*angle_err</code></td><td><b>Correct.</b> Move part of the way toward the accelerometer.</td></tr>
+        </table></div>
+
+        <div class="note good"><b>The D term is not a derivative.</b> Line 98 hands lesson 09 the gyro's
+        own rate measurement, bias-corrected. Nothing in this kit ever differentiates a noisy signal —
+        the gyroscope supplies the derivative for free. That is exactly why a PD controller is
+        realistic on a 16 MHz chip.</div>
+
+        <div class="note"><b>Two oddities worth spotting.</b> <code>angle_calculate()</code> is handed
+        six parameters (<code>dt</code>, <code>Q_angle</code>, …) and uses <em>none</em> of them — the
+        filter reads the globals instead. And <code>K1 = 0.05</code> is declared, passed around, and
+        never used anywhere. Same behaviour, but it is dead weight.</div>
+
+        <div class="note bad"><b>In lesson 08, <code>dt</code> is a lie.</b> This sketch has no
+        <code>MsTimer2</code> — <code>loop()</code> runs free, and four <code>Serial.print</code> calls
+        at 9600 baud take tens of milliseconds on their own. So the real period is nothing like the
+        5 ms the code assumes. It still smooths beautifully, which is enough for a demo, but the filter
+        is only properly scaled from <a href="#l09">lesson 09</a>, where it is called from the 5 ms
+        interrupt. That is the best possible argument for <a href="#l04">lesson 04</a>.</div>
+
+        <p><b>The gains settle.</b> After a few seconds <code>P</code> stops changing, so
+        <code>K_0</code> and <code>K_1</code> become almost constant. From then on this behaves like a
+        fixed-blend filter plus bias learning — which is why many projects compute the two gains once
+        and delete all the matrix algebra.</p>
+      </div>
+    </details>
+
+    <div class="why"><h5>Why it is the hinge of the whole kit</h5>
+      <p>The controller in lesson 09 uses a <strong>derivative</strong> term, and differentiating a
+      noisy signal explodes the noise. Feed it the raw accelerometer angle and the motors scream and
+      jitter without ever balancing. A clean angle is not a nicety — it is the precondition.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 8 — compare against lesson 7</code></div>
+  </div>
+</section>
+
+<!-- ==================== STAGE C ==================== -->
+<h2>Stage C — <em>make it balance</em></h2>
+<div class="stage"><span class="sl">C</span><div>
+  <h3>Two nested loops, and the car comes alive</h3>
+  <p>Everything so far was preparation. Now the angle decides what the motors do — 200 times a second.</p>
+</div></div>
+
+<div class="roadmap" style="margin-bottom:18px">
+<svg viewBox="0 0 900 250" role="img" aria-label="Nested control loops">
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="var(--cyan)"/></marker>
+    <marker id="arm" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="var(--muted)"/></marker>
+  </defs>
+  <text x="18" y="22" fill="var(--muted)" font-family="monospace" font-size="11">what runs every 5 ms, from lesson 10 onward</text>
+
+  <rect x="24" y="54" width="140" height="52" rx="8" fill="var(--panel-2)" stroke="var(--green)"/>
+  <text x="94" y="76" fill="var(--green)" font-family="monospace" font-size="11" text-anchor="middle">SPEED loop</text>
+  <text x="94" y="92" fill="var(--muted)" font-family="monospace" font-size="9.5" text-anchor="middle">PI · from encoders</text>
+
+  <line x1="164" y1="80" x2="234" y2="80" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="199" y="70" fill="var(--amber)" font-family="monospace" font-size="9" text-anchor="middle">lean target</text>
+
+  <rect x="238" y="54" width="140" height="52" rx="8" fill="var(--panel-2)" stroke="var(--cyan)"/>
+  <text x="308" y="76" fill="var(--cyan)" font-family="monospace" font-size="11" text-anchor="middle">ANGLE loop</text>
+  <text x="308" y="92" fill="var(--muted)" font-family="monospace" font-size="9.5" text-anchor="middle">PD · from Kalman</text>
+
+  <line x1="378" y1="80" x2="448" y2="80" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="413" y="70" fill="var(--muted)" font-family="monospace" font-size="9" text-anchor="middle">PWM</text>
+
+  <rect x="452" y="54" width="128" height="52" rx="8" fill="var(--panel-2)" stroke="var(--border)"/>
+  <text x="516" y="76" fill="var(--text)" font-family="monospace" font-size="11" text-anchor="middle">TB6612</text>
+  <text x="516" y="92" fill="var(--muted)" font-family="monospace" font-size="9.5" text-anchor="middle">+ motors</text>
+
+  <line x1="580" y1="80" x2="650" y2="80" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="654" y="54" width="170" height="52" rx="8" fill="var(--panel-2)" stroke="var(--border)"/>
+  <text x="739" y="84" fill="var(--text)" font-family="monospace" font-size="11" text-anchor="middle">the car, falling</text>
+
+  <path d="M739 106 L739 156 L308 156" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arm)"/>
+  <text x="530" y="150" fill="var(--muted)" font-family="monospace" font-size="9.5" text-anchor="middle">MPU6050 → Kalman → measured angle</text>
+  <line x1="308" y1="156" x2="308" y2="106" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arm)"/>
+
+  <path d="M739 106 L739 204 L94 204" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arm)"/>
+  <text x="430" y="198" fill="var(--muted)" font-family="monospace" font-size="9.5" text-anchor="middle">Hall encoders → measured speed and distance</text>
+  <line x1="94" y1="204" x2="94" y2="106" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arm)"/>
+
+  <text x="18" y="236" fill="var(--violet)" font-family="monospace" font-size="9.5">lesson 11 adds a third, parallel TURN loop (PD, from the gyro's Z axis): it adds to one wheel and subtracts from the other.</text>
+</svg>
+</div>
+
+<!-- 09 -->
+<section class="lesson" id="l09" data-pins="4,5,6,7,8,9,10,12,A4,A5">
+  <div class="lhead">
+    <div class="badge">09</div>
+    <div><h3>Upright loop</h3><p class="goal">It stands up. It also wanders off — and that is correct.</p></div>
+    <label class="tick"><input type="checkbox" data-id="09"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Box under the car, battery ON, Bluetooth board out.</li>
+        <li><b>Hold the car upright and completely still</b>, then flash step <b>9</b>.</li>
+        <li>Keep holding it straight for two seconds. Then let go, gently.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p><b>It stands up.</b> Wobbling a little, correcting itself constantly.</p><p>And then it slowly wanders off across the table. <b>That is not a bug</b> — nothing in this step knows where the car is. Only which way it is leaning.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Shakes hard and angrily → catch it. Ask for help before retrying.</li>
+        <li>Falls immediately → you moved it while it was switching on. Try again, hold it straighter.</li>
+        <li>Wheels dead → battery switch.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">P = spring</span>
+      <span class="chip">D = damper</span>
+      <span class="chip">the loop lives in an interrupt</span>
+      <span class="chip">PinChangeInt</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">Try it <b>one line of code, and the difference between standing and falling</b></p>
+      <svg id="sv-pd" viewBox="0 0 900 150"></svg>
+      <p class="cap">Two terms. The first pushes the wheels under the fall; the second brakes the movement before it overshoots.</p>
+    </div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="tablewrap only-expert"><table>
+          <tr><th>Term</th><th>Reads</th><th>Does</th></tr>
+          <tr><td><code>kp · (angle + angle0)</code></td><td>how far it leans</td><td>pushes harder the further it leans</td></tr>
+          <tr><td><code>kd · angle_speed</code></td><td>how fast it leans</td><td>brakes before it overshoots</td></tr>
+          <tr><td><code>ki</code> = 0</td><td>—</td><td>deliberately absent</td></tr>
+        </table></div>
+        <div class="note"><b>Why <code>ki</code> = 0.</b> An integral term would slowly wind up a permanent push and fight the car's own equilibrium. Standing needs a stiff spring and a damper, nothing more. Accumulated error <em>does</em> have a job here — but on the speed loop, next lesson, where what accumulates is distance.</div>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code>MsTimer2::set(5, DSzhongduan);
+MsTimer2::start();
+
+<span class="kw">double</span> kp=34, ki=0, kd=0.62;
+
+PD_pwm = kp*(angle+angle0)
+       + kd*angle_speed;</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+      </div>
+    </div>
+
+    <div class="note bad"><b>It moves the instant it boots.</b> Hold the car before flashing, and hold it <strong>still and upright</strong> at power-on — the gyro offset is sampled during <code>setup()</code>.</div>
+
+    <div class="split" style="margin-top:14px">
+      <div class="side only-expert"><h5>Watch for</h5>
+        <ul>
+          <li><b>It stands, then drifts across the table.</b> Expected — nothing here knows <em>where</em> the car is.</li>
+          <li>Fast shaking + whine → <code>kd</code> too high.</li>
+          <li>Slow growing rocking → <code>kp</code> too high.</li>
+          <li>Leans and gives up → <code>kp</code> too low, or wrong balance point.</li>
+        </ul>
+      </div>
+      <div class="side"><h5>Play with it</h5>
+        <ul><li>The <a href="#l12">tuning playground in lesson 12</a> lets you see every one of those failures without risking the car.</li></ul>
+      </div>
+    </div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 9 — hold the car, battery ON</code></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="lesson" id="l10" data-pins="4,5,6,7,8,9,10,12,A4,A5">
+  <div class="lhead">
+    <div class="badge">10</div>
+    <div><h3>Speed loop</h3><p class="goal">It stands <em>and</em> stays put. Push it, and it comes back.</p></div>
+    <label class="tick"><input type="checkbox" data-id="10"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Same setup as step 9. Flash step <b>10</b>.</li>
+        <li>Let it stand on the table.</li>
+        <li>Push it gently with one finger.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>It stands <b>and stays put</b>. No more wandering.</p><p>Push it: it rolls away, leans back, and comes home. This is the first step where the car really works.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>Rocks slowly back and forth → almost right; it is trying a bit too hard to get home.</li>
+        <li>Still wanders → you are probably still running step 9.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">cascaded loops</span>
+      <span class="chip">outer loop sets the inner target</span>
+      <span class="chip">I removes steady drift</span>
+      <span class="chip">leaning is how it moves</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">Try it <b>to go somewhere, a balancing robot must first lean</b></p>
+      <svg id="sv-lean" viewBox="0 0 900 220"></svg>
+      <div class="ctrls">
+        <div class="btns" id="lean-keys">
+          <button data-l="stop" class="on">stand still</button>
+          <button data-l="fwd">go forward</button>
+          <button data-l="back">go backward</button>
+          <button data-l="push">someone pushes it</button>
+        </div>
+      </div>
+      <div class="verdict" id="vd-lean"></div>
+    </div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="note good"><b>The key idea.</b> The speed loop's output does not go to the motors. It shifts the <strong>target angle</strong> of the angle loop. To stop rolling forward, the car is told to lean back a little — and the angle loop does the real work.</div>
+        <div class="note"><b>Why I and not D.</b> Drift is a small, persistent error — exactly what an integral term is for. A derivative would differentiate the encoder count, which moves in whole pulses; differentiating a staircase gives spikes. Hence <code>kd_speed = 0</code>. Each loop uses only the terms its signal can support.</div>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">double</span> kp_speed=3.6,
+       ki_speed=0.080,
+       kd_speed=0;
+
+speeds = pulseleft + pulseright;
+pulseright = pulseleft = 0;
+
+PI_pwm = ki_speed*(setp0-positions)
+       + kp_speed*(setp0-speeds_filter);</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+        <div class="side only-expert"><h5>Watch for</h5>
+          <ul>
+            <li>It holds one spot instead of walking away.</li>
+            <li>Push it: it rolls, then returns.</li>
+            <li>Slow back-and-forth rocking → <code>ki_speed</code> too high.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>This is the first sketch that really <em>works</em> — and the first time two controllers are
+      stacked, one deciding what the other should aim for.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 10</code></div>
+  </div>
+</section>
+
+<!-- ==================== STAGE D ==================== -->
+<h2>Stage D — <em>make it obey</em></h2>
+<div class="stage"><span class="sl">D</span><div>
+  <h3>Putting a human in the loop</h3>
+  <p>It balances. Now it takes orders, lets you retune it live, and finally learns something about its own body.</p>
+</div></div>
+
+<!-- 11 -->
+<section class="lesson" id="l11" data-pins="0,1,4,5,6,7,8,9,10,12,A4,A5">
+  <div class="lhead">
+    <div class="badge">11</div>
+    <div><h3>Steering</h3><p class="goal">The same five letters as lesson 05 — but they no longer touch a motor.</p></div>
+    <label class="tick"><input type="checkbox" data-id="11"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Bluetooth board out, flash step <b>11</b>, board back in.</li>
+        <li>Pair the phone and stand the car up.</li>
+        <li>Press forward. Watch the car, not the wheels.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>It drives around <b>while staying upright</b>.</p><p>Look closely: before it moves forward, it <b>leans forward first</b>. Leaning is the only way a two-wheeled robot can go anywhere.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>It drives but falls when you stop → let go of the button more gently.</li>
+        <li>No response → the phone paired to the wrong device.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">command targets, not outputs</span>
+      <span class="chip">a third, parallel loop</span>
+      <span class="chip">turn = add to one wheel, subtract from the other</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">Try it <b>lesson 05 vs lesson 11 — the same key, two very different paths</b></p>
+      <svg id="sv-cmd" viewBox="0 0 900 230"></svg>
+      <div class="ctrls">
+        <div class="btns" id="cmd-keys">
+          <button data-c="05" class="on">lesson 05 path</button>
+          <button data-c="11">lesson 11 path</button>
+        </div>
+      </div>
+      <div class="verdict" id="vd-cmd"></div>
+    </div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="tablewrap"><table>
+          <tr><th>Letter</th><th>In lesson 05</th><th>In lesson 11</th></tr>
+          <tr><td><code>F</code></td><td>spin both motors forward</td><td><code>front = 250</code> — a wish, handed to the speed loop</td></tr>
+          <tr><td><code>L</code>/<code>R</code></td><td>spin one motor only</td><td>a turn setpoint for a PD loop on the gyro's Z axis</td></tr>
+          <tr><td><code>S</code></td><td>motors off</td><td>all targets to zero — it stands still, it does not coast</td></tr>
+        </table></div>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">case</span> <span class="nm">'F'</span>: front =  250; <span class="kw">break</span>;
+<span class="kw">case</span> <span class="nm">'B'</span>: back  = -250; <span class="kw">break</span>;
+
+<span class="kw">double</span> kp_turn=24,
+       ki_turn=0,
+       kd_turn=0.08;</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>This is the conceptual payoff of the kit. In lesson 05 a letter meant "spin this motor". Here
+      the same letter means "change what the machine is trying to achieve" — and three controllers
+      work out the rest, 200 times a second.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 11</code></div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="lesson" id="l12" data-pins="0,1,4,5,6,7,8,9,10,12,A4,A5">
+  <div class="lhead">
+    <div class="badge">12</div>
+    <div><h3>Tune it live</h3><p class="goal">Stop guessing what P and D mean. Go and feel them.</p></div>
+    <label class="tick"><input type="checkbox" data-id="12"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>12</b>, pair the phone.</li>
+        <li><b>Write down the number before you change it.</b></li>
+        <li>Press the kp <b>+</b> button a few times, slowly. Then bring it back down.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>At some point the car starts to <b>shiver</b>, and the motors buzz. You have gone too far — come back down about a fifth.</p><p>Try the playground below first. It costs nothing and the car cannot break.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>It fell → stand it up, put the number back where it was.</li>
+        <li>Everything got weird → you changed two things at once. Only ever change one.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">what each gain really does</span>
+      <span class="chip">tune P first, then D</span>
+      <span class="chip">one gain at a time</span>
+      <span class="chip">write down the old value</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">The playground <b>nudge the car 5° and see what your gains do about it</b></p>
+      <canvas id="cv-pd" width="1200" height="380"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>kp — stiffness</span><b id="v-kp">34.0</b></label>
+          <input type="range" id="s-kp" min="0" max="80" step="0.5" value="34">
+        </div>
+        <div class="ctrl">
+          <label><span>kd — damping</span><b id="v-kd">0.62</b></label>
+          <input type="range" id="s-kd" min="0" max="2" step="0.02" value="0.62">
+        </div>
+        <div class="ctrl">
+          <label><span>balance-point error</span><b id="v-of">0.0°</b></label>
+          <input type="range" id="s-of" min="0" max="4" step="0.1" value="0">
+        </div>
+      </div>
+      <div class="btns" style="margin-top:10px">
+        <button data-kp="34" data-kd="0.62" data-of="0">kit defaults</button>
+        <button data-kp="34" data-kd="0" data-of="0">no D → it oscillates</button>
+        <button data-kp="70" data-kd="0.62" data-of="0">too much P → it buzzes</button>
+        <button data-kp="24" data-kd="0.62" data-of="0">too little P → it falls</button>
+        <button data-kp="34" data-kd="1.8" data-of="0">too much D → sluggish</button>
+        <button data-kp="34" data-kd="0.62" data-of="2.5">wrong balance point</button>
+      </div>
+      <div class="verdict" id="vd-pd"></div>
+      <p class="cap">A caricature, not a simulation of your car — the numbers are not physical, but the shapes are exactly the ones you will meet on the table.</p>
+    </div>
+
+    <div class="tablewrap" style="margin-top:14px"><table>
+      <tr><th>Up</th><th>Down</th><th>Gain</th><th>Step</th><th>Affects</th></tr>
+      <tr><td><code>P</code></td><td><code>O</code></td><td><code>kp</code></td><td>0.5</td><td>angle stiffness</td></tr>
+      <tr><td><code>I</code></td><td><code>U</code></td><td><code>kd</code></td><td>0.02</td><td>angle damping</td></tr>
+      <tr><td><code>Y</code></td><td><code>T</code></td><td><code>kp_speed</code></td><td>0.05</td><td>resistance to moving</td></tr>
+      <tr><td><code>G</code></td><td><code>H</code></td><td><code>ki_speed</code></td><td>0.01</td><td>return-to-home strength</td></tr>
+      <tr><td><code>J</code></td><td><code>K</code></td><td><code>kp_turn</code></td><td>0.4</td><td>steering strength</td></tr>
+      <tr><td><code>N</code></td><td><code>M</code></td><td><code>kd_turn</code></td><td>0.01</td><td>steering damping</td></tr>
+    </table></div>
+
+    <div class="note bad"><b>Careful with stray letters.</b> Any character <em>not</em> in that table is treated as a new balance-angle value, so one wrong keystroke knocks the car over. Use the app's buttons, not a free-text terminal.</div>
+
+    <div class="split" style="margin-top:14px">
+      <div class="side"><h5>How to tune, in order</h5>
+        <ul>
+          <li>Raise <code>kp</code> until a fast tremor appears, then come back ~20 %.</li>
+          <li>Raise <code>kd</code> until the tremor damps — stop as soon as the motors buzz at high frequency: that is D amplifying sensor noise.</li>
+          <li>Only then touch the speed loop.</li>
+        </ul>
+      </div>
+      <div class="side"><h5>Pins</h5><div class="pins"></div></div>
+    </div>
+
+    <div class="why"><h5>Why it is here</h5>
+      <p>Because "34 and 0.62" mean nothing until you have watched 24 and 70 fail in completely different ways.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 12</code></div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="lesson" id="l13" data-pins="0,1,4,5,6,7,8,9,10,11,12,13,A4,A5">
+  <div class="lhead">
+    <div class="badge">13</div>
+    <div><h3>Balance point</h3><p class="goal">Teach <em>this</em> car, with its battery and its wheels, where its own zero is.</p></div>
+    <label class="tick"><input type="checkbox" data-id="13"> done</label>
+  </div>
+  <div class="lbody">
+    <div class="nb only-beginner">
+      <div class="nbcol go"><h6>🎮 Do this</h6>
+      <ol>
+        <li>Flash step <b>13</b>. Nothing will happen yet — it is waiting for you.</li>
+        <li>Hold the car and rock it slowly until you feel the spot where it <b>wants to stay by itself</b>.</li>
+        <li>Hold it exactly there and <b>press the button</b>. Listen for two beeps.</li>
+      </ol></div>
+      <div class="nbcol see"><h6>👀 You should see</h6>
+      <p>Two beeps = saved. Now let go and it balances properly.</p><p>You just told this particular car where its own upright is. No two cars have the same one.</p></div>
+      <div class="nbcol fix"><h6>🔧 Not working?</h6>
+      <ul>
+        <li>No beeps → the button was not seen. It will not start until it hears you.</li>
+        <li>It leans to one side afterwards → you captured at the wrong spot. Reset and do it again.</li>
+        <li>Worked yesterday, not today → someone moved the battery pack. Capture it again.</li>
+      </ul></div>
+    </div>
+    <div class="chips">
+      <span class="chip">sensor zero ≠ machine zero</span>
+      <span class="chip">calibration as an action</span>
+      <span class="chip">every other gain depends on it</span>
+    </div>
+
+    <div class="w">
+      <p class="wtitle">Try it <b>hold the car where it truly balances, then press the button</b></p>
+      <svg id="sv-cal" viewBox="0 0 900 280"></svg>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label><span>hold the car at…</span><b id="v-cal">0°</b></label>
+          <input type="range" id="s-cal" min="-8" max="8" step="0.5" value="4">
+        </div>
+        <div class="btns">
+          <button id="b-cal">press the button (capture)</button>
+          <button id="b-calreset">forget it</button>
+        </div>
+      </div>
+      <div class="verdict" id="vd-cal"></div>
+      <p class="cap">The car's true balance point here is <b>+3.5°</b>. Capture at the wrong posture and the car will faithfully hold the wrong one.</p>
+    </div>
+
+    <div class="split" style="margin-top:14px">
+      <div>
+        <div class="note good"><b>How to do it properly.</b> Hold the car and rock it gently until you find the posture where it wants to stay with no motor help. Hold it there, press the button, wait for the two ticks from lesson 01.</div>
+        <div class="note"><b>Recapture</b> whenever you move the battery pack or reassemble anything.</div>
+      </div>
+      <div>
+        <div class="side only-expert"><h5>The code</h5>
+          <div class="codewrap"><button class="copy">copy</button><pre><code><span class="kw">while</span>(i &lt; 1){
+  <span class="kw">if</span>(digitalRead(btn)==0){
+    angle0 = -angle;  <span class="cm">// this is "upright" now</span>
+    buzzer();         <span class="cm">// lesson 01's buzzer</span>
+    i++;
+  }
+}</code></pre></div>
+        </div>
+        <div class="side"><h5>Pins — every subsystem at once</h5><div class="pins"></div></div>
+      </div>
+    </div>
+
+    <div class="why"><h5>Why it is last, and not first</h5>
+      <p>Zero degrees on the MPU6050 is where the sensor chip is flat. That is <em>not</em> where this
+      chassis balances: battery position, how the sensor board was screwed on, wheel wear, a slightly
+      bent axle — each shifts the real equilibrium by a degree or two.</p>
+      <p>And a degree or two is a lot. The angle loop drives faithfully toward whatever target it was
+      given, so a wrong target means the car <strong>correctly holds the wrong posture</strong> — and a
+      leaning car accelerates.</p>
+      <p>What happens next depends on how much of the machine you have built. With the angle loop
+      alone — lesson 09 — nothing absorbs the error, so it rolls away, hits the PWM limit and falls.
+      That is the <b>wrong balance point</b> preset in the <a href="#l12">lesson 12 playground</a>.</p>
+      <p>Once the speed loop exists, something subtler happens, and you can watch it in the
+      <a href="#sim">simulator</a>. A 3° error does <em>not</em> topple the car: the speed loop quietly
+      cancels it by parking the car a couple of metres from where you left it, holding a permanent
+      lean, looking perfectly happy. The integral term is buying off your calibration error with
+      position. But it can only buy so much — <code>positions</code> is clamped at ±3550, so beyond
+      roughly 8° there is nothing left to give and the car leaves for good. Both presets are there:
+      <b>zero off by 3°</b> and <b>zero off by 9°</b>.</p></div>
+
+    <div class="run"><span>Run</span><code>./launch.sh → lesson 13</code></div>
+  </div>
+</section>
+
+<!-- ==================== SIMULATOR ==================== -->
+<h2 id="sim">The simulator — <em>all thirteen lessons in one place</em></h2>
+<div class="stage"><span class="sl">▶</span><div>
+  <h3>A car you cannot break</h3>
+  <p>Same equations as the sketches: the real Kalman filter, the real PD angle loop, the real PI speed
+  loop running once every 8 cycles. Switch pieces off and watch exactly which lesson you just deleted.</p>
+</div></div>
+
+<div class="w">
+  <p class="wtitle">The car <b>drag the sliders while it is running — it reacts live</b><span class="live" id="sim-live">● running</span></p>
+  <canvas id="cv-sim" width="1200" height="360"></canvas>
+  <canvas id="cv-simtrace" width="1200" height="170" style="margin-top:8px"></canvas>
+
+  <div class="ctrls" style="margin-top:12px">
+    <div style="flex:1 1 100%">
+      <label style="display:block;font-size:10.5px;color:var(--muted);margin-bottom:5px">Turn the lessons off, one at a time</label>
+      <div class="btns" id="sim-toggles">
+        <button data-tg="angle" class="on">angle loop (09)</button>
+        <button data-tg="speed" class="on">speed loop (10)</button>
+        <button data-tg="kalman" class="on">Kalman filter (08)</button>
+      </div>
+    </div>
+    <div style="flex:1 1 100%">
+      <label style="display:block;font-size:10.5px;color:var(--muted);margin:6px 0 5px">Control loop period — lesson 04</label>
+      <div class="btns" id="sim-rate">
+        <button data-rate="5" class="on">5 ms</button>
+        <button data-rate="20">20 ms</button>
+        <button data-rate="50">50 ms</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctrls">
+    <div class="ctrl">
+      <label><span>kp — angle</span><b id="v-skp">34.0</b></label>
+      <input type="range" id="s-skp" min="0" max="80" step="0.5" value="34">
+    </div>
+    <div class="ctrl">
+      <label><span>kd — angle</span><b id="v-skd">0.62</b></label>
+      <input type="range" id="s-skd" min="0" max="2" step="0.02" value="0.62">
+    </div>
+    <div class="ctrl">
+      <label><span>kp_speed</span><b id="v-sks">3.60</b></label>
+      <input type="range" id="s-sks" min="0" max="10" step="0.05" value="3.6">
+    </div>
+    <div class="ctrl">
+      <label><span>ki_speed</span><b id="v-ski">0.080</b></label>
+      <input type="range" id="s-ski" min="0" max="0.3" step="0.005" value="0.08">
+    </div>
+    <div class="ctrl">
+      <label><span>balance-point error</span><b id="v-sof">0.0°</b></label>
+      <input type="range" id="s-sof" min="-10" max="10" step="0.25" value="0">
+    </div>
+  </div>
+
+  <div class="btns" style="margin-top:11px">
+    <button data-drive="F">▲ forward (F)</button>
+    <button data-drive="S" class="on">■ stop (S)</button>
+    <button data-drive="B">▼ backward (B)</button>
+    <button id="sim-push">👋 shove it</button>
+    <button id="sim-reset">↺ stand it back up</button>
+  </div>
+
+  <div class="readout" id="ro-sim" style="margin-top:11px"></div>
+  <div class="verdict" id="vd-sim"></div>
+
+  <div class="btns" style="margin-top:11px">
+    <button data-simpreset="kit">the kit, as shipped</button>
+    <button data-simpreset="nospeed">lesson 09 — no speed loop</button>
+    <button data-simpreset="nokalman">lesson 08 — no filter</button>
+    <button data-simpreset="slow">lesson 04 — a 50 ms loop</button>
+    <button data-simpreset="badzero">lesson 13 — zero off by 3°</button>
+    <button data-simpreset="badzero2">lesson 13 — zero off by 9°</button>
+    <button data-simpreset="nod">lesson 12 — no damping</button>
+  </div>
+  <p class="cap">A simplified physical model — one wheel pair, no slip, no motor lag. The <em>controller</em>
+  is not simplified: it is the arithmetic from <code>10_Speed_loop.ino</code>, including the ±255 clamp,
+  the ±3550 anti-windup limit and the cut-out above 80°.</p>
+</div>
+
+<!-- ==================== REFERENCE ==================== -->
+<h2 id="pinmap">Reference — <em>pin map</em></h2>
+<div class="w">
+  <p class="wtitle">Every pin the kit uses <b>only D2, D3 and A0–A3 are left over</b></p>
+  <svg id="sv-board" viewBox="0 0 900 230"></svg>
+  <div class="legend">
+    <span><i style="background:var(--cyan)"></i>motors / PWM</span>
+    <span><i style="background:var(--green)"></i>encoders</span>
+    <span><i style="background:var(--violet)"></i>Bluetooth</span>
+    <span><i style="background:var(--amber)"></i>buzzer / button</span>
+    <span><i style="background:var(--pink)"></i>I²C — MPU6050</span>
+    <span><i style="background:var(--border)"></i>free</span>
+  </div>
+</div>
+
+<div class="tablewrap"><table>
+  <tr><th>Pin</th><th>Owner</th><th>Notes</th></tr>
+  <tr><td><code>D0 / D1</code></td><td>HC-06</td><td>shared with USB — unplug before every upload</td></tr>
+  <tr><td><code>D2 / D3</code></td><td>free</td><td>D3 loses <code>analogWrite</code> once Timer2 is taken</td></tr>
+  <tr><td><code>D4 / D5</code></td><td>encoders</td><td>right / left wheel</td></tr>
+  <tr><td><code>D6 / D7</code></td><td>left motor direction</td><td><code>left_L2</code> / <code>left_L1</code></td></tr>
+  <tr><td><code>D8 / D12</code></td><td>right motor direction</td><td><code>right_R1</code> / <code>right_R2</code></td></tr>
+  <tr><td><code>D9 / D10</code></td><td>motor PWM</td><td>left / right speed</td></tr>
+  <tr><td><code>D11</code></td><td>buzzer</td><td>toggled, not PWM — survives Timer2</td></tr>
+  <tr><td><code>D13</code></td><td>button</td><td>active low; captures the balance angle</td></tr>
+  <tr><td><code>A4 / A5</code></td><td>I²C</td><td>SDA / SCL to the MPU6050 at 0x68</td></tr>
+</table></div>
+
+<h2 id="gains">Reference — <em>every gain in the kit</em></h2>
+<div class="tablewrap"><table>
+  <tr><th>Loop</th><th>Type</th><th>Gains</th><th>Reads</th><th>From</th></tr>
+  <tr><td>Angle</td><td>PD</td><td><code>kp=34</code> <code>ki=0</code> <code>kd=0.62</code></td><td>Kalman angle + rate</td><td>lesson 09</td></tr>
+  <tr><td>Speed</td><td>PI</td><td><code>kp=3.6</code> <code>ki=0.08</code> <code>kd=0</code></td><td>encoder pulses</td><td>lesson 10</td></tr>
+  <tr><td>Turn</td><td>PD</td><td><code>kp=24</code> <code>ki=0</code> <code>kd=0.08</code></td><td>gyroscope Z</td><td>lesson 11</td></tr>
+  <tr><td>Kalman</td><td>filter</td><td><code>Q_angle=0.001</code> <code>Q_gyro=0.003</code> <code>R_angle=0.5</code></td><td>accel + gyro</td><td>lesson 08</td></tr>
+</table></div>
+<p class="cap">Lesson 13 ships slightly different speed gains — <code>kp_speed=3.56</code>, <code>ki_speed=0.072</code> — the result of somebody's tuning session. Yours will differ too.</p>
+
+<h2 id="trouble">Reference — <em>when it misbehaves</em></h2>
+<div class="tablewrap"><table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>Upload fails, "not in sync"</td><td>HC-06 still on D0/D1</td><td>unplug, upload, plug back</td></tr>
+  <tr><td>Sketch runs, wheels dead</td><td>battery pack off</td><td>USB does not power the motors</td></tr>
+  <tr><td>One wheel turns the wrong way</td><td>direction pins swapped</td><td>swap that motor's two direction pins</td></tr>
+  <tr><td>Balances a second, then leaves</td><td>wrong balance point</td><td>lesson 13 — recapture</td></tr>
+  <tr><td>Balances but wanders</td><td>no speed loop</td><td>expected in lesson 09; use lesson 10</td></tr>
+  <tr><td>Violent shaking, motor whine</td><td><code>kd</code> too high, or unfiltered angle</td><td>lower <code>kd</code>; check the Kalman output</td></tr>
+  <tr><td>Slow growing rocking</td><td><code>kp</code> too high</td><td>lower it ~20 %</td></tr>
+  <tr><td>Leans and gives up</td><td><code>kp</code> too low</td><td>raise it, then re-damp with <code>kd</code></td></tr>
+  <tr><td>Balance point wrong every boot</td><td>car moved during <code>setup()</code></td><td>hold still and upright at power-on</td></tr>
+  <tr><td><code>analogWrite</code> on D3/D11 dead</td><td>Timer2 taken by MsTimer2</td><td>another pin, or <code>digitalWrite</code></td></tr>
+  <tr><td>Serial monitor silent</td><td>wrong baud</td><td>every sketch uses 9600</td></tr>
+</table></div>
+
+</main>
+</div>
+
+<footer>
+  <img src="workshop-diy-logo.svg" alt="Workshop-DIY">
+  <span>Workshop-DIY — KS0193 self-balancing car workshop.<br>
+  Companion to <code>launch.sh</code> and the sketches in <code>Test Code/</code>.</span>
+  <span class="fspace"></span>
+  <span>Hardware and original sketches © keyestudio.</span>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text){
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function clear(n){ while (n.firstChild) n.removeChild(n.firstChild); }
+  /* ================= theme ==================
+     Every widget paints from this one palette, and the palette is read back out of the
+     stylesheet. That way the canvases and the generated SVG follow the CSS instead of
+     keeping a second, silently diverging copy of the colours. */
+  var C = {};
+  var VARMAP = { cyan:"--cyan", amber:"--amber", green:"--green", red:"--danger",
+                 violet:"--violet", pink:"--pink", muted:"--muted", line:"--border",
+                 text:"--text", bg:"--bg", panel:"--panel-2", ghost:"--ghost" };
+  function readPalette(){
+    var cs = getComputedStyle(document.documentElement);
+    for (var k in VARMAP) C[k] = cs.getPropertyValue(VARMAP[k]).trim();
+  }
+  // Widgets that paint once (or only on interaction) register a repaint here.
+  // The animated ones redraw every frame and pick the new palette up on their own.
+  var REDRAW = [];
+  function onTheme(fn){ REDRAW.push(fn); }
+  function markThemeButtons(t){
+    document.querySelectorAll("[data-set-theme]").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-set-theme") === t);
+    });
+  }
+  function setTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("ks0193.theme", t); } catch(e){}
+    markThemeButtons(t);
+    readPalette();
+    REDRAW.forEach(function(fn){ try { fn(); } catch(e){} });
+  }
+  (function(){
+    var saved = "dark";
+    try { saved = localStorage.getItem("ks0193.theme") || "dark"; } catch(e){}
+    document.documentElement.setAttribute("data-theme", saved);
+    markThemeButtons(saved);
+    readPalette();
+    document.querySelectorAll("[data-set-theme]").forEach(function(b){
+      b.addEventListener("click", function(){ setTheme(b.getAttribute("data-set-theme")); });
+    });
+  })();
+
+  /* ================= beginner / expert =================
+     Beginner is the default: someone arriving here for the first time should not have to
+     find a switch before the page makes sense. Everything is hidden with CSS only, so the
+     widgets keep running and nothing has to be rebuilt when you flip. */
+  (function(){
+    var saved = "beginner";
+    try { saved = localStorage.getItem("ks0193.mode") || "beginner"; } catch(e){}
+    function apply(m){
+      document.documentElement.setAttribute("data-mode", m);
+      document.querySelectorAll("[data-set-mode]").forEach(function(b){
+        b.classList.toggle("on", b.getAttribute("data-set-mode") === m);
+      });
+    }
+    apply(saved);
+    document.querySelectorAll("[data-set-mode]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var m = b.getAttribute("data-set-mode");
+        try { localStorage.setItem("ks0193.mode", m); } catch(e){}
+        apply(m);
+      });
+    });
+  })();
+
+  /* ================= pin strips ================= */
+  var PIN_ROLE = {"0":"BT","1":"BT","4":"ENC","5":"ENC","6":"MOT","7":"MOT","8":"MOT",
+                  "9":"PWM","10":"PWM","11":"BUZ","12":"MOT","13":"BTN","A4":"I2C","A5":"I2C"};
+  var ALL_PINS = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","A4","A5"];
+  document.querySelectorAll(".lesson").forEach(function(sec){
+    var raw = (sec.getAttribute("data-pins")||"").trim();
+    var act = raw ? raw.split(",") : [];
+    sec.querySelectorAll(".pins").forEach(function(host){
+      ALL_PINS.forEach(function(p){
+        var s = document.createElement("span");
+        var on = act.indexOf(p) !== -1;
+        s.className = "pin" + (on ? " on " + (PIN_ROLE[p]||"") : "");
+        s.textContent = (p.charAt(0)==="A" ? p : "D"+p);
+        host.appendChild(s);
+      });
+    });
+  });
+
+  /* ================= progress ================= */
+  var KEY = "ks0193.done", done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY)||"{}")||{}; } catch(e){ done = {}; }
+  function paint(){
+    var n = 0;
+    document.querySelectorAll(".tick input").forEach(function(b){
+      var id = b.getAttribute("data-id");
+      b.checked = !!done[id]; if (done[id]) n++;
+      var a = document.querySelector('.rail a[href="#l'+id+'"]');
+      if (a) a.classList.toggle("done", !!done[id]);
+      var nd = document.querySelector('#rmnodes [data-rm="'+id+'"]');
+      if (nd) nd.setAttribute("fill", done[id] ? C.green : C.panel);
+    });
+    document.getElementById("ptext").textContent = n + " / 13 done";
+    document.getElementById("pbar").style.width = (n/13*100) + "%";
+  }
+  document.querySelectorAll(".tick input").forEach(function(b){
+    b.addEventListener("change", function(){
+      var id = b.getAttribute("data-id");
+      if (b.checked) done[id] = 1; else delete done[id];
+      try { localStorage.setItem(KEY, JSON.stringify(done)); } catch(e){}
+      paint();
+    });
+  });
+
+  /* ================= roadmap nodes ================= */
+  (function(){
+    var g = document.getElementById("rmnodes");
+    if (!g) return;
+    var names = ["button","motors","encoders","timer","bluetooth","raw IMU","angle","Kalman",
+                 "upright","speed","steer","tune","balance pt"];
+    // follow roughly the same curve as the gradient path
+    var xs = [40,100,160,220,285,330,390,455,510,580,660,745,845];
+    var ys = [132,131,128,124,119,112,102,92,80,66,52,42,32];
+    for (var i = 0; i < 13; i++){
+      var id = (i+1 < 10 ? "0" : "") + (i+1);
+      var a = el("a", {}); a.setAttributeNS("http://www.w3.org/1999/xlink","href","#l"+id);
+      a.setAttribute("href", "#l"+id);
+      a.appendChild(el("circle", {cx:xs[i], cy:ys[i], r:9, fill:C.panel,
+        stroke:(i<5?C.cyan:i<8?C.pink:i<10?C.green:C.amber), "stroke-width":1.6,
+        "data-rm":id, style:"cursor:pointer"}));
+      a.appendChild(el("text", {x:xs[i], y:ys[i]+3.2, "text-anchor":"middle",
+        "font-family":"monospace", "font-size":8, fill:C.text,
+        style:"pointer-events:none"}, String(i+1)));
+      a.appendChild(el("text", {x:xs[i], y:ys[i]-15, "text-anchor":"middle",
+        "font-family":"monospace", "font-size":7.5, fill:C.muted,
+        style:"pointer-events:none"}, names[i]));
+      g.appendChild(a);
+    }
+  })();
+  paint();
+  onTheme(paint);
+
+  /* ================= copy buttons ================= */
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var code = btn.parentNode.querySelector("code");
+      if (!code) return;
+      var fin = function(){ btn.textContent="copied"; btn.classList.add("done");
+        setTimeout(function(){ btn.textContent="copy"; btn.classList.remove("done"); },1200); };
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(code.innerText).then(fin, function(){});
+      else {
+        var ta=document.createElement("textarea"); ta.value=code.innerText;
+        document.body.appendChild(ta); ta.select();
+        try{ document.execCommand("copy"); fin(); }catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+
+  /* ================= rail highlight ================= */
+  var links = {};
+  document.querySelectorAll(".rail a").forEach(function(a){ links[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window){
+    var obs = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        var a = links[en.target.id]; if (!a) return;
+        if (en.isIntersecting){
+          document.querySelectorAll(".rail a.active").forEach(function(x){ x.classList.remove("active"); });
+          a.classList.add("active");
+        }
+      });
+    }, {rootMargin:"-8% 0px -78% 0px"});
+    document.querySelectorAll(".lesson, h2[id]").forEach(function(n){ obs.observe(n); });
+  }
+
+  /* only animate what is on screen */
+  var visible = {};
+  function watchVisibility(node, key){
+    if (!("IntersectionObserver" in window)) { visible[key] = true; return; }
+    new IntersectionObserver(function(es){ visible[key] = es[0].isIntersecting; },
+      {rootMargin:"120px"}).observe(node);
+  }
+
+  /* ================= 01 · buzzer waveform ================= */
+  (function(){
+    var cv = document.getElementById("cv-buzz"); if (!cv) return;
+    var ctx = cv.getContext("2d"), sms = document.getElementById("s-bzms"),
+        vms = document.getElementById("v-bzms"), live = document.getElementById("bz-live"),
+        press = document.getElementById("b-bzpress");
+    var pressedUntil = 0;
+    watchVisibility(cv, "buzz");
+
+    function draw(t){
+      var half = parseInt(sms.value,10);
+      var freq = Math.round(1000/(2*half));
+      vms.textContent = half + " ms";
+      var on = t < pressedUntil;
+      live.textContent = on ? "● beeping — " + freq + " Hz" : "";
+      var W = cv.width, H = cv.height, mid = H/2, pad = 40;
+      ctx.clearRect(0,0,W,H);
+      // axis
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, mid); ctx.lineTo(W-10, mid); ctx.stroke();
+      ctx.font = "17px monospace"; ctx.fillStyle = C.muted;
+      ctx.fillText("HIGH", 4, mid-52); ctx.fillText("LOW", 4, mid+64);
+      // square wave
+      var pxPerMs = 26, hi = mid-46, lo = mid+46;
+      ctx.lineWidth = 2.6; ctx.strokeStyle = on ? C.amber : C.line;
+      ctx.beginPath();
+      var x = pad, level = hi, first = true;
+      while (x < W-10){
+        if (first){ ctx.moveTo(x, level); first = false; }
+        var nx = Math.min(x + half*pxPerMs, W-10);
+        ctx.lineTo(nx, level);
+        level = (level === hi ? lo : hi);
+        if (nx < W-10) ctx.lineTo(nx, level);
+        x = nx;
+      }
+      ctx.stroke();
+      // period bracket
+      ctx.strokeStyle = C.cyan; ctx.lineWidth = 1.4;
+      var p0 = pad, p1 = pad + 2*half*pxPerMs;
+      ctx.beginPath(); ctx.moveTo(p0, H-34); ctx.lineTo(p0, H-24);
+      ctx.lineTo(p1, H-24); ctx.lineTo(p1, H-34); ctx.stroke();
+      ctx.fillStyle = C.cyan;
+      ctx.fillText("one cycle = " + (2*half) + " ms  →  " + freq + " Hz", p0+8, H-32);
+    }
+    press.addEventListener("click", function(){ pressedUntil = performance.now() + 1400; });
+    sms.addEventListener("input", function(){ draw(performance.now()); });
+    (function loop(){ if (visible["buzz"]) draw(performance.now()); requestAnimationFrame(loop); })();
+  })();
+
+  /* ================= 02 · H-bridge ================= */
+  (function(){
+    var sv = document.getElementById("sv-hb"); if (!sv) return;
+    var mode = "fwd", pwm = 150, ang = 0, last = performance.now();
+    var s = document.getElementById("s-hb"), v = document.getElementById("v-hb"),
+        ro = document.getElementById("ro-hb");
+    var MODES = {
+      fwd:  {r1:1,r2:0,dir: 1,name:"forward"},
+      rev:  {r1:0,r2:1,dir:-1,name:"reverse"},
+      coast:{r1:0,r2:0,dir: 0,name:"coasting — no drive at all"},
+      brake:{r1:1,r2:1,dir: 0,name:"braking — both sides shorted"}
+    };
+    var wheel;
+    function build(){
+      clear(sv);
+      sv.appendChild(el("text",{x:14,y:20,"font-family":"monospace","font-size":11,fill:C.muted},"TB6612 · right motor"));
+      // pins
+      [["right_R1 (D8)",56],["right_R2 (D12)",96],["PWM_R (D10)",136]].forEach(function(p,i){
+        sv.appendChild(el("text",{x:14,y:p[1]+4,"font-family":"monospace","font-size":10,fill:C.muted},p[0]));
+        sv.appendChild(el("circle",{cx:150,cy:p[1],r:7,fill:C.panel,stroke:C.line,"data-dot":i}));
+        sv.appendChild(el("line",{x1:157,y1:p[1],x2:210,y2:p[1],stroke:C.line,"stroke-width":1.4,"data-wire":i}));
+      });
+      sv.appendChild(el("rect",{x:210,y:34,width:96,height:120,rx:8,fill:C.panel,stroke:C.line}));
+      sv.appendChild(el("text",{x:258,y:88,"text-anchor":"middle","font-family":"monospace","font-size":11,fill:C.text},"H-bridge"));
+      sv.appendChild(el("text",{x:258,y:104,"text-anchor":"middle","font-family":"monospace","font-size":9,fill:C.muted},"TB6612FNG"));
+      sv.appendChild(el("line",{x1:306,y1:94,x2:376,y2:94,stroke:C.line,"stroke-width":1.6,"data-out":1}));
+      // wheel
+      wheel = el("g",{});
+      wheel.appendChild(el("circle",{cx:0,cy:0,r:44,fill:"none",stroke:C.cyan,"stroke-width":3}));
+      for (var i=0;i<6;i++){
+        var a = i*Math.PI/3;
+        wheel.appendChild(el("line",{x1:0,y1:0,x2:(44*Math.cos(a)).toFixed(1),y2:(44*Math.sin(a)).toFixed(1),
+          stroke:C.line,"stroke-width":2}));
+      }
+      wheel.appendChild(el("circle",{cx:0,cy:0,r:6,fill:C.cyan}));
+      wheel.appendChild(el("circle",{cx:0,cy:-32,r:5,fill:C.amber}));
+      var wrap = el("g",{transform:"translate(444,94)"});
+      wrap.appendChild(wheel);
+      sv.appendChild(wrap);
+      sv.appendChild(el("text",{x:444,y:172,"text-anchor":"middle","font-family":"monospace","font-size":10,fill:C.muted,"data-lbl":1},""));
+      // truth table
+      var rows = [["1","0","forward"],["0","1","reverse"],["0","0","coast"],["1","1","brake"]];
+      sv.appendChild(el("text",{x:14,y:186,"font-family":"monospace","font-size":9.5,fill:C.muted},"R1  R2"));
+      rows.forEach(function(r,i){
+        var y = 200 + i*14;
+        sv.appendChild(el("rect",{x:10,y:y-10,width:190,height:13,rx:3,fill:"none","data-row":i}));
+        sv.appendChild(el("text",{x:16,y:y,"font-family":"monospace","font-size":9.5,fill:C.muted,"data-rowtxt":i},
+          r[0]+"   "+r[1]+"    "+r[2]));
+      });
+    }
+    function render(){
+      var m = MODES[mode];
+      sv.querySelectorAll("[data-dot]").forEach(function(d,i){
+        var onv = (i===0? m.r1 : i===1? m.r2 : (pwm>0?1:0));
+        d.setAttribute("fill", onv ? C.cyan : C.panel);
+        d.setAttribute("stroke", onv ? C.cyan : C.line);
+      });
+      sv.querySelectorAll("[data-wire]").forEach(function(w,i){
+        var onv = (i===0? m.r1 : i===1? m.r2 : (pwm>0?1:0));
+        w.setAttribute("stroke", onv ? C.cyan : C.line);
+      });
+      var out = sv.querySelector("[data-out]");
+      out.setAttribute("stroke", (m.dir!==0 && pwm>0) ? C.cyan : C.line);
+      sv.querySelectorAll("[data-row]").forEach(function(r,i){
+        var keys = ["fwd","rev","coast","brake"];
+        r.setAttribute("fill", keys[i]===mode ? "rgba(76,224,210,.12)" : "none");
+      });
+      sv.querySelectorAll("[data-rowtxt]").forEach(function(t,i){
+        var keys = ["fwd","rev","coast","brake"];
+        t.setAttribute("fill", keys[i]===mode ? C.cyan : C.muted);
+      });
+      var lbl = sv.querySelector("[data-lbl]");
+      lbl.textContent = m.name + (m.dir!==0 ? "  ·  PWM " + pwm : "");
+      lbl.setAttribute("fill", m.dir!==0 && pwm>0 ? C.cyan : C.muted);
+      ro.innerHTML =
+        '<span class="ro">R1 <b>'+m.r1+'</b></span>' +
+        '<span class="ro">R2 <b>'+m.r2+'</b></span>' +
+        '<span class="ro a">analogWrite <b>'+pwm+'</b></span>' +
+        '<span class="ro g">duty <b>'+Math.round(pwm/255*100)+'%</b></span>';
+    }
+    build(); render();
+    onTheme(function(){ build(); render(); });
+    watchVisibility(sv, "hb");
+    document.querySelectorAll("[data-hb]").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("[data-hb]").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); mode = b.getAttribute("data-hb"); render();
+      });
+    });
+    s.addEventListener("input", function(){ pwm = parseInt(s.value,10); v.textContent = pwm; render(); });
+    (function spin(t){
+      var dt = Math.min(60, t-last); last = t;
+      if (visible["hb"]){
+        var m = MODES[mode];
+        ang += m.dir * (pwm/255) * dt * 0.55;
+        wheel.setAttribute("transform","rotate("+ang.toFixed(1)+")");
+      }
+      requestAnimationFrame(spin);
+    })(performance.now());
+  })();
+
+  /* ================= 03 · encoder ================= */
+  (function(){
+    var cv = document.getElementById("cv-enc"); if (!cv) return;
+    var ctx = cv.getContext("2d"), s = document.getElementById("s-enc"),
+        v = document.getElementById("v-enc"), ro = document.getElementById("ro-enc");
+    var ang = 0, count = 0, hist = [], lastState = 0, last = performance.now();
+    var MAGNETS = 6;
+    watchVisibility(cv, "enc");
+    document.getElementById("b-encreset").addEventListener("click", function(){ count = 0; });
+
+    function step(t){
+      var dt = Math.min(60, t - last); last = t;
+      if (!visible["enc"]) { requestAnimationFrame(step); return; }
+      var sp = parseInt(s.value,10)/100;
+      v.textContent = sp === 0 ? "stopped" : sp < .3 ? "slow" : sp < .7 ? "medium" : "fast";
+      ang += sp * dt * 0.010;
+      var state = (Math.floor(ang/(Math.PI*2)*MAGNETS) % 2 + 2) % 2;
+      if (state !== lastState){ count++; lastState = state; }
+      hist.push(state); if (hist.length > 260) hist.shift();
+
+      var W = cv.width, H = cv.height;
+      ctx.clearRect(0,0,W,H);
+      // wheel
+      var cx = 130, cy = H/2, R = 88;
+      ctx.strokeStyle = C.line; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+      for (var i=0;i<MAGNETS;i++){
+        var a = ang + i*Math.PI*2/MAGNETS;
+        ctx.fillStyle = (i%2===0) ? C.green : C.line;
+        ctx.beginPath(); ctx.arc(cx+Math.cos(a)*R, cy+Math.sin(a)*R, 9, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = C.line;
+      ctx.beginPath(); ctx.arc(cx,cy,9,0,Math.PI*2); ctx.fill();
+      // sensor
+      ctx.fillStyle = C.amber;
+      ctx.fillRect(cx+R+12, cy-12, 22, 24);
+      ctx.font = "16px monospace"; ctx.fillStyle = C.muted;
+      ctx.fillText("Hall", cx+R+8, cy-20);
+      // pulse train
+      var x0 = 300, x1 = W-16, hi = 60, lo = H-70;
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x0,lo+16); ctx.lineTo(x1,lo+16); ctx.stroke();
+      ctx.fillStyle = C.muted; ctx.fillText("D5", x0-30, (hi+lo)/2);
+      ctx.strokeStyle = C.green; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      var step2 = (x1-x0)/260, py = null;
+      for (var j=0;j<hist.length;j++){
+        var x = x0 + j*step2, y = hist[j] ? hi : lo;
+        if (py === null){ ctx.moveTo(x,y); } else { if (py !== y) ctx.lineTo(x,py); ctx.lineTo(x,y); }
+        py = y;
+      }
+      ctx.stroke();
+      ctx.fillStyle = C.muted;
+      ctx.fillText("each edge = one count", x0+6, H-24);
+      ro.innerHTML = '<span class="ro g">pulse count <b>'+count+'</b></span>' +
+                     '<span class="ro">magnets <b>'+MAGNETS+'</b></span>' +
+                     '<span class="ro a">state <b>'+(state?"HIGH":"LOW")+'</b></span>';
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  })();
+
+  /* ================= 04 · timer vs delay ================= */
+  (function(){
+    var cv = document.getElementById("cv-tim"); if (!cv) return;
+    var ctx = cv.getContext("2d"), s = document.getElementById("s-tim"),
+        v = document.getElementById("v-tim"), ro = document.getElementById("ro-tim");
+    var t0 = performance.now(), timerTicks = [], loopTicks = [], nextLoop = 500;
+    var PERIOD = 500, SPAN = 9000;
+    watchVisibility(cv, "tim");
+    document.getElementById("b-timreset").addEventListener("click", function(){
+      t0 = performance.now(); timerTicks = []; loopTicks = []; nextLoop = PERIOD;
+    });
+
+    function step(){
+      if (!visible["tim"]) { requestAnimationFrame(step); return; }
+      var t = performance.now() - t0;
+      if (t > SPAN){ t0 = performance.now(); timerTicks=[]; loopTicks=[]; nextLoop=PERIOD; t=0; }
+      var work = parseInt(s.value,10);
+      v.textContent = work === 0 ? "none" : work < 35 ? "a little" : work < 70 ? "some" : "a lot";
+      while (timerTicks.length * PERIOD < t) timerTicks.push(timerTicks.length * PERIOD);
+      while (nextLoop < t){ loopTicks.push(nextLoop); nextLoop += PERIOD + work*2.2; }
+
+      var W = cv.width, H = cv.height, pad = 150;
+      ctx.clearRect(0,0,W,H);
+      ctx.font = "17px monospace";
+      function lane(y, ticks, col, label, sub){
+        ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-16, y); ctx.stroke();
+        ctx.fillStyle = C.muted; ctx.fillText(label, 10, y-6); ctx.fillText(sub, 10, y+16);
+        ticks.forEach(function(tt){
+          var x = pad + tt/SPAN*(W-pad-16);
+          ctx.strokeStyle = col; ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.moveTo(x, y-20); ctx.lineTo(x, y+20); ctx.stroke();
+        });
+      }
+      lane(64, timerTicks, C.cyan, "MsTimer2", "interrupt");
+      lane(160, loopTicks, C.amber, "loop() +", "delay()");
+      // playhead
+      var px = pad + t/SPAN*(W-pad-16);
+      ctx.strokeStyle = C.muted; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, 30); ctx.lineTo(px, H-14); ctx.stroke(); ctx.setLineDash([]);
+
+      var drift = timerTicks.length - loopTicks.length;
+      ro.innerHTML = '<span class="ro">timer ticks <b>'+timerTicks.length+'</b></span>' +
+                     '<span class="ro a">loop ticks <b>'+loopTicks.length+'</b></span>' +
+                     '<span class="ro '+(drift>0?"":"g")+'">behind by <b>'+drift+'</b></span>';
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  })();
+
+  /* ================= 05 · bluetooth path ================= */
+  (function(){
+    var sv = document.getElementById("sv-bt"); if (!sv) return;
+    var ro = document.getElementById("ro-bt");
+    var ACTS = {F:"front()",B:"back()",L:"left()",R:"right()",S:"Stop()"};
+    function build(k){
+      clear(sv);
+      var known = !!ACTS[k];
+      var boxes = [["phone",30],["HC-06",150],["D0 → UNO",270],["switch(val)",390]];
+      boxes.forEach(function(b,i){
+        sv.appendChild(el("rect",{x:b[1],y:40,width:100,height:44,rx:8,fill:C.panel,
+          stroke:(k? C.violet : C.line)}));
+        sv.appendChild(el("text",{x:b[1]+50,y:66,"text-anchor":"middle","font-family":"monospace",
+          "font-size":10,fill:C.text}, b[0]));
+        if (i<3) sv.appendChild(el("line",{x1:b[1]+100,y1:62,x2:b[1]+120,y2:62,
+          stroke:(k?C.violet:C.line),"stroke-width":1.6}));
+      });
+      if (k){
+        sv.appendChild(el("circle",{cx:80,cy:110,r:13,fill:C.violet}));
+        sv.appendChild(el("text",{x:80,y:114,"text-anchor":"middle","font-family":"monospace",
+          "font-size":12,fill:C.bg,"font-weight":"bold"},k));
+        sv.appendChild(el("text",{x:110,y:114,"font-family":"monospace","font-size":9.5,fill:C.muted},
+          "one byte, 9600 baud — about 1 ms on the wire"));
+        sv.appendChild(el("line",{x1:440,y1:84,x2:440,y2:126,stroke:(known?C.cyan:C.red),
+          "stroke-width":1.6}));
+        sv.appendChild(el("rect",{x:360,y:130,width:160,height:40,rx:8,fill:C.panel,
+          stroke:(known?C.cyan:C.red)}));
+        sv.appendChild(el("text",{x:440,y:155,"text-anchor":"middle","font-family":"monospace",
+          "font-size":10.5,fill:(known?C.cyan:C.red)}, known ? ACTS[k] : "nothing happens"));
+      } else {
+        sv.appendChild(el("text",{x:30,y:120,"font-family":"monospace","font-size":10,fill:C.muted},
+          "press a key below"));
+      }
+      sv.appendChild(el("text",{x:30,y:198,"font-family":"monospace","font-size":9,fill:C.muted},
+        "D0/D1 are the same wires the USB cable uses — that is the whole problem."));
+      ro.innerHTML = k
+        ? '<span class="ro v">sent <b>'+k+'</b></span><span class="ro '+(known?"g":"")+'">result <b>'
+          + (known?ACTS[k]:"ignored") + '</b></span>'
+        : '';
+    }
+    var cur = null;
+    build(cur); onTheme(function(){ build(cur); });
+    document.querySelectorAll("#bt-keys button").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("#bt-keys button").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); cur = b.getAttribute("data-k"); build(cur);
+      });
+    });
+  })();
+
+  /* ================= 06 · I2C registers ================= */
+  (function(){
+    var sv = document.getElementById("sv-i2c"); if (!sv) return;
+    var ro = document.getElementById("ro-i2c");
+    var REG = {
+      "6B": {name:"Power Management 1", bits:"0b00000000",
+             what:"clears the SLEEP bit — the chip starts measuring",
+             eff:"before this write, every reading is zero"},
+      "1B": {name:"Gyroscope config", bits:"0b00000000",
+             what:"full scale = ±250 °/s",
+             eff:"this is why lesson 07 divides gx by 131"},
+      "1C": {name:"Accelerometer config", bits:"0b00000000",
+             what:"full scale = ±2 g",
+             eff:"1 g reads as about 16384 counts"}
+    };
+    function build(r){
+      clear(sv);
+      var d = REG[r];
+      sv.appendChild(el("text",{x:14,y:20,"font-family":"monospace","font-size":11,fill:C.muted},
+        "I²C — UNO talks, MPU6050 listens"));
+      sv.appendChild(el("rect",{x:20,y:44,width:110,height:52,rx:8,fill:C.panel,stroke:C.line}));
+      sv.appendChild(el("text",{x:75,y:74,"text-anchor":"middle","font-family":"monospace","font-size":10.5,fill:C.text},"UNO"));
+      sv.appendChild(el("rect",{x:400,y:44,width:140,height:52,rx:8,fill:C.panel,stroke:C.pink}));
+      sv.appendChild(el("text",{x:470,y:68,"text-anchor":"middle","font-family":"monospace","font-size":10.5,fill:C.pink},"MPU6050"));
+      sv.appendChild(el("text",{x:470,y:84,"text-anchor":"middle","font-family":"monospace","font-size":9,fill:C.muted},"address 0x68"));
+      // wires
+      [["A4 · SDA",62],["A5 · SCL",82]].forEach(function(w){
+        sv.appendChild(el("line",{x1:130,y1:w[1],x2:400,y2:w[1],stroke:C.pink,"stroke-width":1.4}));
+        sv.appendChild(el("text",{x:210,y:w[1]-5,"font-family":"monospace","font-size":8.5,fill:C.muted},w[0]));
+      });
+      // packet
+      var xs = [40,150,260], labs = ["0x68 + W","0x"+r,d.bits];
+      labs.forEach(function(l,i){
+        sv.appendChild(el("rect",{x:xs[i],y:126,width:100,height:30,rx:5,fill:C.bg,
+          stroke:(i===1?C.amber:C.line)}));
+        sv.appendChild(el("text",{x:xs[i]+50,y:146,"text-anchor":"middle","font-family":"monospace",
+          "font-size":10,fill:(i===1?C.amber:C.text)},l));
+      });
+      sv.appendChild(el("text",{x:40,y:120,"font-family":"monospace","font-size":8.5,fill:C.muted},
+        "who        which register     what value"));
+      sv.appendChild(el("text",{x:20,y:186,"font-family":"monospace","font-size":11,fill:C.amber},
+        "0x"+r+" — "+d.name));
+      sv.appendChild(el("text",{x:20,y:204,"font-family":"monospace","font-size":10,fill:C.text}, d.what));
+      sv.appendChild(el("text",{x:20,y:222,"font-family":"monospace","font-size":9.5,fill:C.muted}, d.eff));
+      ro.innerHTML = '<span class="ro a">register <b>0x'+r+'</b></span>' +
+                     '<span class="ro">value <b>'+d.bits+'</b></span>';
+    }
+    var cur = "6B";
+    build(cur); onTheme(function(){ build(cur); });
+    document.querySelectorAll("#i2c-keys button").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("#i2c-keys button").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); cur = b.getAttribute("data-r"); build(cur);
+      });
+    });
+  })();
+
+  /* ================= 07 · tilt & atan2 ================= */
+  (function(){
+    var sv = document.getElementById("sv-tilt"); if (!sv) return;
+    var s = document.getElementById("s-tilt"), v = document.getElementById("v-tilt"),
+        ro = document.getElementById("ro-tilt"), tap = document.getElementById("b-tap");
+    var tapUntil = 0;
+    function draw(){
+      // The sketch's angle carries a leading minus ("direction processing"), so the
+      // geometry is mirrored here to make the slider read the same number the sketch prints.
+      var deg = parseInt(s.value,10), rad = -deg*Math.PI/180;
+      v.textContent = deg + "°";
+      var shove = performance.now() < tapUntil;
+      var cx = 250, cy = 165, G = 100;
+      clear(sv);
+      // ground
+      sv.appendChild(el("line",{x1:60,y1:238,x2:440,y2:238,stroke:C.line,"stroke-width":1.5}));
+      // car, rotated
+      var g = el("g",{transform:"translate("+cx+","+cy+") rotate("+(-deg)+")"});
+      g.appendChild(el("rect",{x:-46,y:-74,width:92,height:104,rx:9,fill:C.panel,stroke:C.cyan,"stroke-width":2}));
+      g.appendChild(el("text",{x:0,y:-16,"text-anchor":"middle","font-family":"monospace","font-size":9,fill:C.muted},"MPU6050"));
+      g.appendChild(el("circle",{cx:0,cy:-40,r:7,fill:C.pink}));
+      g.appendChild(el("circle",{cx:-34,cy:44,r:22,fill:"none",stroke:C.line,"stroke-width":3}));
+      g.appendChild(el("circle",{cx:34,cy:44,r:22,fill:"none",stroke:C.line,"stroke-width":3}));
+      // car axes: z up along body, y across body
+      var az = Math.cos(rad), ay = Math.sin(rad);
+      g.appendChild(el("line",{x1:0,y1:-40,x2:0,y2:-40-70,stroke:C.cyan,"stroke-width":2,"stroke-dasharray":"3 3"}));
+      g.appendChild(el("text",{x:6,y:-118,"font-family":"monospace","font-size":9,fill:C.cyan},"car's z"));
+      g.appendChild(el("line",{x1:0,y1:-40,x2:70,y2:-40,stroke:C.cyan,"stroke-width":2,"stroke-dasharray":"3 3"}));
+      g.appendChild(el("text",{x:74,y:-36,"font-family":"monospace","font-size":9,fill:C.cyan},"car's y"));
+      sv.appendChild(g);
+      // gravity — always straight down, in page coords
+      var ox = cx + Math.sin(rad)*40, oy = cy - Math.cos(rad)*40;  // the sensor position
+      sv.appendChild(el("line",{x1:ox,y1:oy,x2:ox,y2:oy+G,stroke:C.green,"stroke-width":2.6}));
+      sv.appendChild(el("path",{d:"M"+(ox-5)+","+(oy+G-8)+" L"+ox+","+(oy+G)+" L"+(ox+5)+","+(oy+G-8),
+        fill:"none",stroke:C.green,"stroke-width":2.6}));
+      sv.appendChild(el("text",{x:ox+9,y:oy+G-6,"font-family":"monospace","font-size":10,fill:C.green},"gravity, 1 g"));
+
+      // numbers panel
+      var rawAy = Math.round(16384*ay + (shove ? 9000 : 0));
+      var rawAz = Math.round(16384*az);
+      var angle = -Math.atan2(rawAy, rawAz)*180/Math.PI;
+      var bx = 520;
+      sv.appendChild(el("text",{x:bx,y:44,"font-family":"monospace","font-size":10,fill:C.muted},
+        "what the sketch actually reads"));
+      var rows = [
+        ["ay (raw)", rawAy, shove ? C.red : C.cyan],
+        ["az (raw)", rawAz, C.cyan],
+        ["-atan2(ay,az)", angle.toFixed(1)+"°", shove ? C.red : C.amber],
+        ["the real tilt", deg.toFixed(1)+"°", C.green]
+      ];
+      rows.forEach(function(r,i){
+        var y = 76 + i*36;
+        sv.appendChild(el("rect",{x:bx,y:y-18,width:340,height:28,rx:5,fill:C.bg,stroke:C.line}));
+        sv.appendChild(el("text",{x:bx+12,y:y,"font-family":"monospace","font-size":10.5,fill:C.muted},r[0]));
+        sv.appendChild(el("text",{x:bx+328,y:y,"text-anchor":"end","font-family":"monospace",
+          "font-size":12,fill:r[2]}, String(r[1])));
+      });
+      if (shove){
+        sv.appendChild(el("text",{x:bx,y:236,"font-family":"monospace","font-size":10,fill:C.red},
+          "a shove, not a tilt — and the angle believes it"));
+      }
+      ro.innerHTML = '<span class="ro">tilt <b>'+deg+'°</b></span>' +
+        '<span class="ro '+(shove?"":"g")+'">reported <b>'+angle.toFixed(1)+'°</b></span>' +
+        '<span class="ro a">error <b>'+Math.abs(angle-deg).toFixed(1)+'°</b></span>';
+    }
+    s.addEventListener("input", draw);
+    tap.addEventListener("click", function(){
+      tapUntil = performance.now() + 1100;
+      draw(); var iv = setInterval(draw, 80);
+      setTimeout(function(){ clearInterval(iv); draw(); }, 1200);
+    });
+    draw(); onTheme(draw);
+  })();
+
+  /* ================= 08a · the two informants ================= */
+  (function(){
+    var sv = document.getElementById("sv-k0"); if (!sv) return;
+    function panel(x, col, title, sub, path, verdict, vcol){
+      sv.appendChild(el("rect",{x:x,y:34,width:390,height:180,rx:10,fill:C.bg,stroke:col,opacity:".9"}));
+      sv.appendChild(el("text",{x:x+18,y:60,"font-family":"monospace","font-size":13,fill:col},title));
+      sv.appendChild(el("text",{x:x+18,y:78,"font-family":"monospace","font-size":10,fill:C.muted},sub));
+      // little chart inside
+      sv.appendChild(el("line",{x1:x+18,y1:150,x2:x+372,y2:150,stroke:C.line,"stroke-dasharray":"3 3"}));
+      sv.appendChild(el("text",{x:x+330,y:145,"font-family":"monospace","font-size":8,fill:C.line},"the truth"));
+      sv.appendChild(el("path",{d:path,fill:"none",stroke:col,"stroke-width":1.8,
+        transform:"translate("+(x+18)+",0)"}));
+      sv.appendChild(el("text",{x:x+18,y:200,"font-family":"monospace","font-size":10.5,fill:vcol},verdict));
+    }
+    function build(){
+    clear(sv);
+    // jumpy accelerometer: noisy around the truth
+    var d1 = "M0 150";
+    for (var i=1;i<=44;i++) d1 += " L"+(i*8)+" "+(150 + (Math.sin(i*2.7)*13 + Math.cos(i*5.1)*11)).toFixed(1);
+    // smooth gyro: clean but sliding away
+    var d2 = "M0 150";
+    for (var j=1;j<=44;j++) d2 += " L"+(j*8)+" "+(150 - j*1.15).toFixed(1);
+
+    panel(20, C.red, "the JUMPY one — accelerometer",
+      "shouts a different number every single reading",
+      d1, "✓ never gets lost      ✗ never sits still", C.muted);
+    panel(490, C.violet, "the CALM one — gyroscope",
+      "silky smooth, and quietly sliding away from the truth",
+      d2, "✓ beautifully steady    ✗ slowly, silently wrong", C.muted);
+
+    sv.appendChild(el("text",{x:450,y:250,"text-anchor":"middle","font-family":"monospace",
+      "font-size":12,fill:C.cyan},"the filter listens to both, and trusts each one for what it is good at"));
+    sv.appendChild(el("text",{x:450,y:274,"text-anchor":"middle","font-family":"monospace",
+      "font-size":10.5,fill:C.muted},"calm one → what just changed     ·     jumpy one → where we really are"));
+    sv.appendChild(el("path",{d:"M215 214 L430 236",fill:"none",stroke:C.line,"stroke-width":1.2}));
+    sv.appendChild(el("path",{d:"M685 214 L470 236",fill:"none",stroke:C.line,"stroke-width":1.2}));
+    }
+    build(); onTheme(build);
+  })();
+
+  /* ================= 08b · who do you believe? ================= */
+  (function(){
+    var sv = document.getElementById("sv-k1"); if (!sv) return;
+    var sp = document.getElementById("s-k1p"), sr = document.getElementById("s-k1r"),
+        vp = document.getElementById("v-k1p"), vr = document.getElementById("v-k1r"),
+        vd = document.getElementById("vd-k1");
+    var PRED = -8, MEAS = 12;           // two opinions, in degrees
+    function x2px(v){ return 90 + (v+20)/40*720; }
+    function draw(){
+      var P = parseInt(sp.value,10)/10;   // variance of the prediction
+      var R = parseInt(sr.value,10)/10;   // variance of the measurement
+      var K = P/(P+R);
+      var res = PRED + K*(MEAS-PRED);
+      vp.textContent = P < 3 ? "very sure" : P < 7 ? "fairly sure" : "not sure at all";
+      vr.textContent = R < 3 ? "barely jumpy" : R < 7 ? "quite jumpy" : "wildly jumpy";
+      clear(sv);
+      // axis
+      sv.appendChild(el("line",{x1:80,y1:150,x2:820,y2:150,stroke:C.line,"stroke-width":1.5}));
+      [-20,-10,0,10,20].forEach(function(t){
+        sv.appendChild(el("line",{x1:x2px(t),y1:146,x2:x2px(t),y2:156,stroke:C.line}));
+        sv.appendChild(el("text",{x:x2px(t),y:172,"text-anchor":"middle","font-family":"monospace",
+          "font-size":9.5,fill:C.muted},t+"°"));
+      });
+      function opinion(v, spread, col, label, y, side){
+        var w = Math.sqrt(spread)*26;
+        sv.appendChild(el("rect",{x:x2px(v)-w/2,y:y-9,width:w,height:18,rx:9,
+          fill:col,opacity:".16"}));
+        sv.appendChild(el("line",{x1:x2px(v)-w/2,y1:y,x2:x2px(v)+w/2,y2:y,stroke:col,"stroke-width":1.4}));
+        sv.appendChild(el("circle",{cx:x2px(v),cy:y,r:6,fill:col}));
+        sv.appendChild(el("line",{x1:x2px(v),y1:y+(side>0?8:-8),x2:x2px(v),y2:150,
+          stroke:col,"stroke-dasharray":"3 3","stroke-width":1.1}));
+        sv.appendChild(el("text",{x:x2px(v),y:y+(side>0?-16:26),"text-anchor":"middle",
+          "font-family":"monospace","font-size":10.5,fill:col},label));
+        sv.appendChild(el("text",{x:x2px(v)+w/2+10,y:y+4,"font-family":"monospace",
+          "font-size":9,fill:C.muted},"± how sure"));
+      }
+      opinion(PRED, P, C.violet, "the calm one says " + PRED + "°", 78, 1);
+      opinion(MEAS, R, C.red, "the jumpy one says +" + MEAS + "°", 222, -1);
+      // the answer
+      sv.appendChild(el("circle",{cx:x2px(res),cy:150,r:9,fill:C.green}));
+      sv.appendChild(el("text",{x:x2px(res),y:132,"text-anchor":"middle","font-family":"monospace",
+        "font-size":12,fill:C.green}, res.toFixed(1)+"°"));
+      // the journey
+      sv.appendChild(el("line",{x1:x2px(PRED),y1:150,x2:x2px(res),y2:150,
+        stroke:C.green,"stroke-width":3}));
+      vd.innerHTML = '<span style="color:'+C.green+'">●</span> K = P / (P + R) = <b style="color:'
+        + C.green + '">' + K.toFixed(2) + '</b> — so the answer moves <b>'
+        + Math.round(K*100) + '%</b> of the way from the calm one toward the jumpy one, landing at '
+        + res.toFixed(1) + '°. '
+        + (K < 0.25 ? "The calm one is confident, so he mostly wins."
+          : K > 0.7 ? "The calm one has no idea, so we hand the decision to the jumpy one."
+          : "Neither wins outright — that is the normal case.");
+    }
+    sp.addEventListener("input", draw); sr.addEventListener("input", draw);
+    draw(); onTheme(draw);
+  })();
+
+  /* ================= 08c · predict / correct breathing ================= */
+  (function(){
+    var sv = document.getElementById("sv-k2"); if (!sv) return;
+    var vd = document.getElementById("vd-k2");
+    var TRUTH = 12, R = 4;
+    var est, P, phase, n, started, timer = null;
+    function reset(){ est = 0; P = 1; phase = "predict"; n = 0; started = false; draw(); }
+    function half(){
+      started = true;
+      if (phase === "predict"){
+        // the car is still, so the gyro reports ~0: the estimate barely moves...
+        est += 0.9;          // ...but a small unknown rotation slips in
+        P   += 2.2;          // ...and we get less sure
+        phase = "correct";
+      } else {
+        var K = P/(P+R);
+        est += K*(TRUTH + (Math.random()-0.5)*5 - est);
+        P    = (1-K)*P;
+        phase = "predict"; n++;
+      }
+      draw();
+    }
+    function x2px(v){ return 70 + v/20*760; }
+    function draw(){
+      clear(sv);
+      var justDid = (phase === "correct") ? "predict" : "correct";
+      // axis
+      sv.appendChild(el("line",{x1:60,y1:200,x2:850,y2:200,stroke:C.line,"stroke-width":1.5}));
+      [0,5,10,15,20].forEach(function(t){
+        sv.appendChild(el("line",{x1:x2px(t),y1:196,x2:x2px(t),y2:206,stroke:C.line}));
+        sv.appendChild(el("text",{x:x2px(t),y:222,"text-anchor":"middle","font-family":"monospace",
+          "font-size":9.5,fill:C.muted},t+"°"));
+      });
+      // truth
+      sv.appendChild(el("line",{x1:x2px(TRUTH),y1:60,x2:x2px(TRUTH),y2:200,
+        stroke:C.green,"stroke-dasharray":"5 4","stroke-width":1.4}));
+      sv.appendChild(el("text",{x:x2px(TRUTH)+8,y:246,"font-family":"monospace","font-size":10,
+        fill:C.green},"the real tilt — nobody told the filter"));
+      // the uncertainty cloud, drawn as a bell
+      var sd = Math.sqrt(P), w = Math.min(360, sd*70), cx = x2px(est), col = justDid==="predict"?C.violet:C.red;
+      var d = "M"+(cx-w)+",180";
+      for (var i=-w;i<=w;i+=4){
+        var y = 180 - 92*Math.exp(-(i*i)/(2*(w/2.6)*(w/2.6)));
+        d += " L"+(cx+i).toFixed(1)+","+y.toFixed(1);
+      }
+      sv.appendChild(el("path",{d:d+" Z",fill:col,opacity:".18",stroke:col,"stroke-width":1.6}));
+      sv.appendChild(el("line",{x1:cx,y1:88,x2:cx,y2:200,stroke:C.cyan,"stroke-width":2}));
+      sv.appendChild(el("circle",{cx:cx,cy:200,r:7,fill:C.cyan}));
+      sv.appendChild(el("text",{x:cx,y:80,"text-anchor":"middle","font-family":"monospace",
+        "font-size":11.5,fill:C.cyan},"the filter thinks "+est.toFixed(1)+"°"));
+      // width marker
+      sv.appendChild(el("line",{x1:cx-w/2.6,y1:150,x2:cx+w/2.6,y2:150,stroke:col,"stroke-width":1.2}));
+      sv.appendChild(el("text",{x:cx+w/2.6+8,y:154,"font-family":"monospace","font-size":9.5,fill:col},
+        "how unsure: "+sd.toFixed(2)));
+      // phase banner
+      var bcol = started ? col : C.line;
+      sv.appendChild(el("rect",{x:60,y:22,width:190,height:26,rx:6,fill:C.bg,stroke:bcol}));
+      sv.appendChild(el("text",{x:155,y:40,"text-anchor":"middle","font-family":"monospace",
+        "font-size":11,fill:bcol}, started ? "just did: " + justDid.toUpperCase() : "nothing has happened yet"));
+      sv.appendChild(el("text",{x:270,y:40,"font-family":"monospace","font-size":10,fill:C.muted},
+        "full cycles: " + n + "   ·   in the real car this happens 200× a second"));
+      sv.appendChild(el("text",{x:600,y:262,"font-family":"monospace","font-size":10,fill:C.muted},
+        "next: " + phase.toUpperCase()));
+      if (!started){
+        vd.innerHTML = 'The filter starts out believing the car is at 0° and is <b>not at all sure</b> — that is the wide cloud. The real tilt is 12°, but nobody has told it that. Press <b>next half-step</b> and watch the cloud breathe.';
+        return;
+      }
+      vd.innerHTML = justDid === "predict"
+        ? '<span style="color:'+C.violet+'">●</span> <b>PREDICT.</b> Nothing was measured — the filter just guessed forward using the gyro. Notice the cloud got <b>wider</b>: guessing always costs certainty. That is lines 70–78.'
+        : '<span style="color:'+C.red+'">●</span> <b>CORRECT.</b> The accelerometer spoke. The estimate jumped part of the way toward it, and the cloud got <b>narrower</b>: a measurement always buys certainty. That is lines 92–99.';
+    }
+    document.getElementById("b-k2step").addEventListener("click", function(){
+      if (timer){ clearInterval(timer); timer = null;
+        document.getElementById("b-k2auto").classList.remove("on");
+        document.getElementById("b-k2auto").textContent = "play"; }
+      half();
+    });
+    document.getElementById("b-k2reset").addEventListener("click", function(){
+      if (timer){ clearInterval(timer); timer = null;
+        document.getElementById("b-k2auto").classList.remove("on");
+        document.getElementById("b-k2auto").textContent = "play"; }
+      reset();
+    });
+    document.getElementById("b-k2auto").addEventListener("click", function(){
+      var b = this;
+      if (timer){ clearInterval(timer); timer = null; b.classList.remove("on"); b.textContent = "play"; }
+      else { timer = setInterval(half, 700); b.classList.add("on"); b.textContent = "pause"; }
+    });
+    reset(); onTheme(draw);
+  })();
+
+  /* ================= 08d · learning the gyro's lie ================= */
+  (function(){
+    var cv = document.getElementById("cv-k3"); if (!cv) return;
+    var ctx = cv.getContext("2d"), s = document.getElementById("s-k3"),
+        v = document.getElementById("v-k3"), vd = document.getElementById("vd-k3");
+    var N = 260, dt = 0.03;
+    var gyroOnly, est, qbias, P, hg, hk, hb, t;
+    function reset(){ gyroOnly = 0; est = 0; qbias = 0;
+      P = [[1,0],[0,1]]; hg=[]; hk=[]; hb=[]; t = 0; }
+    reset();
+    watchVisibility(cv, "k3");
+    s.addEventListener("input", reset);
+    document.getElementById("b-k3reset").addEventListener("click", reset);
+
+    function step(){
+      if (!visible["k3"]) { requestAnimationFrame(step); return; }
+      var LIE = parseInt(s.value,10)/100;         // the gyro's constant offset, °/s
+      v.textContent = (LIE>=0?"+":"") + LIE.toFixed(2) + " °/s";
+      // the car never moves. the gyro still reports LIE. the accelerometer reports 0 + noise.
+      var gyro = LIE, accel = (Math.random()-0.5)*7;
+      gyroOnly += gyro*dt;
+      // the real filter, same equations as the sketch
+      var Q_angle = 0.001, Q_gyro = 0.003, R_angle = 0.5;
+      est += (gyro - qbias)*dt;
+      var err = accel - est;
+      var Pd0 = Q_angle - P[0][1] - P[1][0], Pd1 = -P[1][1], Pd2 = -P[1][1], Pd3 = Q_gyro;
+      P[0][0] += Pd0*dt; P[0][1] += Pd1*dt; P[1][0] += Pd2*dt; P[1][1] += Pd3*dt;
+      var E = R_angle + P[0][0], K0 = P[0][0]/E, K1 = P[1][0]/E;
+      var t0 = P[0][0], t1 = P[0][1];
+      P[0][0] -= K0*t0; P[0][1] -= K0*t1; P[1][0] -= K1*t0; P[1][1] -= K1*t1;
+      qbias += K1*err;
+      est   += K0*err;
+      t += dt;
+      // Once the gyro-only line has run off the top, start again — the point is to watch
+      // the gap open up, not to stare at a line pinned against the edge.
+      // The filter's own state is deliberately kept: you then watch the gap reopen against
+      // an estimate that has already learned the lie and simply stays put.
+      if (Math.abs(gyroOnly) > 30){ gyroOnly = 0; hg = []; hk = []; hb = []; }
+      hg.push(gyroOnly); hk.push(est); hb.push(qbias);
+      [hg,hk,hb].forEach(function(a){ if (a.length>N) a.shift(); });
+
+      var W = cv.width, H = cv.height, pad = 52, span = 22, chartW = W - pad - 310;
+      ctx.clearRect(0,0,W,H);
+      ctx.font = "17px monospace";
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      [-20,-10,0,10,20].forEach(function(g){
+        var y = H/2 - g/span*(H/2-30);
+        ctx.strokeStyle = (g===0 ? C.ghost : C.line);
+        ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+chartW,y); ctx.stroke();
+        ctx.fillStyle = C.muted; ctx.fillText(g+"°", 6, y-4);
+      });
+      function trace(arr,col,w){
+        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
+        for (var i=0;i<arr.length;i++){
+          var x = pad + i/(N-1)*chartW;
+          var y = H/2 - Math.max(-span,Math.min(span,arr[i]))/span*(H/2-30);
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      trace(hg, C.violet, 2.2);
+      trace(hk, C.cyan, 2.8);
+      ctx.fillStyle = C.violet; ctx.fillRect(pad+8,14,16,4);
+      ctx.fillStyle = C.muted;  ctx.fillText("gyro, just added up", pad+30, 20);
+      ctx.fillStyle = C.cyan;   ctx.fillRect(pad+300,14,16,4);
+      ctx.fillStyle = C.muted;  ctx.fillText("the filter", pad+322, 20);
+
+      // the learned bias, as a dial on the right
+      var bx = pad + chartW + 40;
+      ctx.fillStyle = C.muted; ctx.fillText("the lie it has worked out", bx, 60);
+      ctx.fillStyle = C.amber; ctx.font = "34px monospace";
+      ctx.fillText((qbias>=0?"+":"") + qbias.toFixed(2), bx, 108);
+      ctx.font = "17px monospace"; ctx.fillStyle = C.muted;
+      ctx.fillText("°/s   (q_bias)", bx, 132);
+      ctx.fillText("the truth was " + (LIE>=0?"+":"") + LIE.toFixed(2), bx, 166);
+      // progress bar toward the true lie
+      var frac = LIE === 0 ? 1 : Math.max(0, Math.min(1, qbias/LIE));
+      ctx.strokeStyle = C.line; ctx.strokeRect(bx, 186, 180, 12);
+      ctx.fillStyle = C.green;  ctx.fillRect(bx, 186, 180*frac, 12);
+      ctx.fillStyle = C.muted;  ctx.fillText(Math.round(frac*100) + "% discovered", bx, 220);
+
+      var drift = Math.abs(gyroOnly), errK = Math.abs(est);
+      vd.innerHTML = t < 3
+        ? '<span style="color:'+C.amber+'">●</span> Give it a moment — the filter has not noticed the lie yet.'
+        : '<span style="color:'+C.green+'">●</span> The car has not moved at all. Just adding up the gyro puts you <b>'
+          + drift.toFixed(1) + '°</b> away from the truth and still climbing. The filter is off by <b>'
+          + errK.toFixed(1) + '°</b> — because it worked out the gyro was lying by '
+          + qbias.toFixed(2) + ' °/s and subtracted it. Drag the slider: it re-learns the new lie in a few seconds.';
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  })();
+
+  /* ================= 08 · sensor fusion ================= */
+  (function(){
+    var cv = document.getElementById("cv-fuse"); if (!cv) return;
+    var ctx = cv.getContext("2d"), s = document.getElementById("s-fuse"),
+        v = document.getElementById("v-fuse"), vd = document.getElementById("vd-fuse");
+    var N = 300, t = 0, spike = 0;
+    var truth=[], acc=[], gyroA=[], fused=[];
+    var gyroAngle = 0, est = 0, BIAS = 0.55;
+    watchVisibility(cv, "fuse");
+    function reset(){ truth=[];acc=[];gyroA=[];fused=[];gyroAngle=0;est=0;t=0; }
+    document.getElementById("b-fusereset").addEventListener("click", reset);
+    document.getElementById("b-fusetap").addEventListener("click", function(){ spike = 26; });
+
+    function step(){
+      if (!visible["fuse"]) { requestAnimationFrame(step); return; }
+      var k = parseInt(s.value,10)/1000;   // 0.001 .. 0.100
+      v.textContent = k < .008 ? "gyro only" : k < .035 ? "balanced (the kit)" :
+                      k < .07 ? "leaning on the accelerometer" : "accelerometer only";
+      var dt = 0.033;
+      t += dt;
+      var real = 13*Math.sin(t*0.75);
+      var rate = 13*0.75*Math.cos(t*0.75);
+      var a = real + (Math.random()-0.5)*9 + spike;
+      spike *= 0.72; if (spike < 0.4) spike = 0;
+      gyroAngle += (rate + BIAS)*dt;
+      est = (est + rate*dt)*(1-k) + a*k;
+      truth.push(real); acc.push(a); gyroA.push(gyroAngle); fused.push(est);
+      [truth,acc,gyroA,fused].forEach(function(arr){ if (arr.length>N) arr.shift(); });
+
+      var W = cv.width, H = cv.height, pad = 46, span = 34;
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      ctx.font = "17px monospace"; ctx.fillStyle = C.muted;
+      [-30,-15,0,15,30].forEach(function(g){
+        var y = H/2 - g/span*(H/2-26);
+        ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-10,y); ctx.stroke();
+        ctx.fillText(g+"°", 4, y-4);
+      });
+      function trace(arr, col, w, dash){
+        ctx.strokeStyle = col; ctx.lineWidth = w;
+        ctx.setLineDash(dash||[]);
+        ctx.beginPath();
+        for (var i=0;i<arr.length;i++){
+          var x = pad + i/(N-1)*(W-pad-10);
+          var y = H/2 - Math.max(-span,Math.min(span,arr[i]))/span*(H/2-26);
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      trace(truth, C.ghost, 2);
+      trace(acc, C.red, 1.1);
+      trace(gyroA, C.violet, 1.8);
+      trace(fused, C.cyan, 2.8);
+      var lx = pad+8;
+      [["true tilt",C.ghost],["accelerometer",C.red],["gyro, integrated",C.violet],["filter output",C.cyan]]
+        .forEach(function(l,i){
+          ctx.fillStyle = l[1]; ctx.fillRect(lx+i*260, 14, 16, 4);
+          ctx.fillStyle = C.muted; ctx.fillText(l[0], lx+i*260+22, 20);
+        });
+
+      var errF = Math.abs(fused[fused.length-1]-truth[truth.length-1]);
+      var errG = Math.abs(gyroA[gyroA.length-1]-truth[truth.length-1]);
+      var msg;
+      if (k < .008) msg = '<span style="color:'+C.red+'">●</span> Trusting the gyro alone: perfectly smooth, and sliding further from the truth every second. Off by '+errG.toFixed(1)+'° already.';
+      else if (k > .07) msg = '<span style="color:'+C.amber+'">●</span> Trusting the accelerometer alone: never drifts, but you have copied all its noise straight into the output.';
+      else msg = '<span style="color:'+C.green+'">●</span> Smooth <em>and</em> right: off by only '+errF.toFixed(1)+'°, while the raw gyro is off by '+errG.toFixed(1)+'°. Press "tap the car" and watch the red line jump while the cyan one barely moves.';
+      vd.innerHTML = msg;
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  })();
+
+  /* ================= 09 · PD anatomy ================= */
+  (function(){
+    var sv = document.getElementById("sv-pd"); if (!sv) return;
+    function build(){
+    clear(sv);
+    sv.appendChild(el("text",{x:20,y:34,"font-family":"monospace","font-size":15,fill:C.text},"PD_pwm ="));
+    sv.appendChild(el("rect",{x:120,y:14,width:250,height:30,rx:6,fill:"rgba(76,224,210,.10)",stroke:C.cyan}));
+    sv.appendChild(el("text",{x:245,y:34,"text-anchor":"middle","font-family":"monospace","font-size":14,fill:C.cyan},"kp * (angle + angle0)"));
+    sv.appendChild(el("text",{x:384,y:34,"font-family":"monospace","font-size":15,fill:C.text},"+"));
+    sv.appendChild(el("rect",{x:410,y:14,width:210,height:30,rx:6,fill:"rgba(176,140,255,.10)",stroke:C.violet}));
+    sv.appendChild(el("text",{x:515,y:34,"text-anchor":"middle","font-family":"monospace","font-size":14,fill:C.violet},"kd * angle_speed"));
+
+    sv.appendChild(el("line",{x1:245,y1:48,x2:245,y2:70,stroke:C.cyan,"stroke-dasharray":"3 3"}));
+    sv.appendChild(el("text",{x:245,y:88,"text-anchor":"middle","font-family":"monospace","font-size":11,fill:C.cyan},"HOW FAR it leans"));
+    sv.appendChild(el("text",{x:245,y:106,"text-anchor":"middle","font-family":"monospace","font-size":10,fill:C.muted},"a spring: the further out,"));
+    sv.appendChild(el("text",{x:245,y:120,"text-anchor":"middle","font-family":"monospace","font-size":10,fill:C.muted},"the harder it pushes back"));
+
+    sv.appendChild(el("line",{x1:515,y1:48,x2:515,y2:70,stroke:C.violet,"stroke-dasharray":"3 3"}));
+    sv.appendChild(el("text",{x:515,y:88,"text-anchor":"middle","font-family":"monospace","font-size":11,fill:C.violet},"HOW FAST it leans"));
+    sv.appendChild(el("text",{x:515,y:106,"text-anchor":"middle","font-family":"monospace","font-size":10,fill:C.muted},"a damper: it brakes the motion"));
+    sv.appendChild(el("text",{x:515,y:120,"text-anchor":"middle","font-family":"monospace","font-size":10,fill:C.muted},"before it overshoots"));
+
+    sv.appendChild(el("text",{x:660,y:34,"font-family":"monospace","font-size":11,fill:C.muted},"then:"));
+    sv.appendChild(el("text",{x:660,y:56,"font-family":"monospace","font-size":10.5,fill:C.amber},"clamp to ±255"));
+    sv.appendChild(el("text",{x:660,y:76,"font-family":"monospace","font-size":10.5,fill:C.amber},"sign → direction pins"));
+    sv.appendChild(el("text",{x:660,y:96,"font-family":"monospace","font-size":10.5,fill:C.amber},"size → analogWrite"));
+    sv.appendChild(el("text",{x:660,y:120,"font-family":"monospace","font-size":9.5,fill:C.muted},"exactly lesson 02"));
+    }
+    build(); onTheme(build);
+  })();
+
+  /* ================= 10 · lean to move ================= */
+  (function(){
+    var sv = document.getElementById("sv-lean"); if (!sv) return;
+    var vd = document.getElementById("vd-lean");
+    var STATES = {
+      stop:{lean:0,arrow:0,txt:"Upright and still. The speed loop sees zero speed and zero distance error, so it asks for zero lean."},
+      fwd:{lean:9,arrow:1,txt:"To move forward it must first fall forward — on purpose. The speed loop asks the angle loop for a small forward lean, and the wheels chase it."},
+      back:{lean:-9,arrow:-1,txt:"Same trick, mirrored. There is no other way for a two-wheeled robot to travel."},
+      push:{lean:-11,arrow:1,txt:"Someone shoved it forward. The encoders report it is moving and away from home, so the speed loop asks for a backward lean — the car drives forward under itself to catch up, then returns."}
+    };
+    function draw(k){
+      var st = STATES[k];
+      clear(sv);
+      sv.appendChild(el("line",{x1:60,y1:186,x2:560,y2:186,stroke:C.line,"stroke-width":1.5}));
+      var g = el("g",{transform:"translate(300,150) rotate("+st.lean+")"});
+      g.appendChild(el("rect",{x:-40,y:-92,width:80,height:104,rx:9,fill:C.panel,stroke:C.cyan,"stroke-width":2}));
+      g.appendChild(el("circle",{cx:-28,cy:30,r:20,fill:"none",stroke:C.line,"stroke-width":3}));
+      g.appendChild(el("circle",{cx:28,cy:30,r:20,fill:"none",stroke:C.line,"stroke-width":3}));
+      sv.appendChild(g);
+      sv.appendChild(el("line",{x1:300,y1:150,x2:300,y2:40,stroke:C.line,"stroke-dasharray":"4 4"}));
+      sv.appendChild(el("text",{x:306,y:44,"font-family":"monospace","font-size":9,fill:C.muted},"true vertical"));
+      if (st.arrow !== 0){
+        var x0 = 300 + st.arrow*70, x1 = 300 + st.arrow*150;
+        sv.appendChild(el("line",{x1:x0,y1:206,x2:x1,y2:206,stroke:C.green,"stroke-width":3}));
+        sv.appendChild(el("path",{d:"M"+(x1-st.arrow*10)+",200 L"+x1+",206 L"+(x1-st.arrow*10)+",212",
+          fill:"none",stroke:C.green,"stroke-width":3}));
+        sv.appendChild(el("text",{x:(x0+x1)/2,y:228,"text-anchor":"middle","font-family":"monospace",
+          "font-size":10,fill:C.green},"it travels this way"));
+      }
+      sv.appendChild(el("text",{x:600,y:52,"font-family":"monospace","font-size":10,fill:C.muted},"speed loop asks for"));
+      sv.appendChild(el("text",{x:600,y:82,"font-family":"monospace","font-size":22,
+        fill:(st.lean?C.amber:C.green)}, (st.lean>0?"+":"")+st.lean+"°"));
+      sv.appendChild(el("text",{x:600,y:104,"font-family":"monospace","font-size":9.5,fill:C.muted},"of lean, and the"));
+      sv.appendChild(el("text",{x:600,y:118,"font-family":"monospace","font-size":9.5,fill:C.muted},"angle loop delivers it"));
+      vd.textContent = st.txt;
+    }
+    var cur = "stop";
+    draw(cur); onTheme(function(){ draw(cur); });
+    document.querySelectorAll("#lean-keys button").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("#lean-keys button").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); cur = b.getAttribute("data-l"); draw(cur);
+      });
+    });
+  })();
+
+  /* ================= 11 · command path ================= */
+  (function(){
+    var sv = document.getElementById("sv-cmd"); if (!sv) return;
+    var vd = document.getElementById("vd-cmd");
+    function draw(which){
+      clear(sv);
+      var five = which === "05";
+      sv.appendChild(el("circle",{cx:60,cy:100,r:22,fill:C.violet}));
+      sv.appendChild(el("text",{x:60,y:106,"text-anchor":"middle","font-family":"monospace",
+        "font-size":17,fill:C.bg,"font-weight":"bold"},"F"));
+      var chain = five
+        ? [["switch(val)",C.line],["digitalWrite\nanalogWrite",C.line],["motors spin",C.amber]]
+        : [["front = 250",C.amber],["SPEED loop\n(PI)",C.green],["target angle",C.amber],
+           ["ANGLE loop\n(PD)",C.cyan],["motors, 200×/s",C.cyan]];
+      var w = five ? 150 : 130, gap = five ? 40 : 18, x = 120;
+      chain.forEach(function(c,i){
+        sv.appendChild(el("rect",{x:x,y:74,width:w,height:52,rx:8,fill:C.panel,stroke:c[1]}));
+        var parts = c[0].split("\n");
+        parts.forEach(function(p,j){
+          sv.appendChild(el("text",{x:x+w/2,y:(parts.length===1?105:97)+j*15,"text-anchor":"middle",
+            "font-family":"monospace","font-size":10,fill:c[1]===C.line?C.text:c[1]},p));
+        });
+        if (i < chain.length-1)
+          sv.appendChild(el("line",{x1:x+w,y1:100,x2:x+w+gap,y2:100,stroke:C.line,"stroke-width":1.6}));
+        x += w + gap;
+      });
+      if (!five){
+        sv.appendChild(el("path",{d:"M760 126 L760 172 L268 172 L268 126",fill:"none",
+          stroke:C.muted,"stroke-width":1.2,"stroke-dasharray":"4 3"}));
+        sv.appendChild(el("text",{x:520,y:188,"text-anchor":"middle","font-family":"monospace",
+          "font-size":9.5,fill:C.muted},"and the sensors come back around — continuously"));
+      }
+      sv.appendChild(el("text",{x:20,y:36,"font-family":"monospace","font-size":11,
+        fill:five?C.amber:C.cyan}, five ? "lesson 05 — the letter commands an OUTPUT"
+                                        : "lesson 11 — the letter changes a TARGET"));
+      vd.textContent = five
+        ? "Straight line. The letter reaches a motor pin almost immediately, and nothing checks the result. Fine for a car lying on the table."
+        : "The letter never reaches a motor. It sets a wish; three controllers argue about how to grant it while keeping the car upright; and the sensors report back every 5 ms. Same key, completely different machine.";
+    }
+    var cur = "05";
+    draw(cur); onTheme(function(){ draw(cur); });
+    document.querySelectorAll("#cmd-keys button").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("#cmd-keys button").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); cur = b.getAttribute("data-c"); draw(cur);
+      });
+    });
+  })();
+
+  /* ================= 12 · PD playground ================= */
+  (function(){
+    var cv = document.getElementById("cv-pd"); if (!cv) return;
+    var ctx = cv.getContext("2d");
+    var skp = document.getElementById("s-kp"), skd = document.getElementById("s-kd"),
+        sof = document.getElementById("s-of"), vkp = document.getElementById("v-kp"),
+        vkd = document.getElementById("v-kd"), vof = document.getElementById("v-of"),
+        vd  = document.getElementById("vd-pd");
+    var G = 550, S = 18.06, DT = 0.005, SPAN = 2.5, FELL = 40;
+
+    function sim(kp, kd, off){
+      var th = 5, om = 0, pts = [], fell = -1, steps = Math.round(SPAN/DT);
+      for (var i=0;i<=steps;i++){
+        pts.push(th);
+        if (Math.abs(th) > FELL){ fell = i; break; }
+        var u = kp*(th-off) + kd*om;
+        if (u> 255) u= 255;
+        if (u<-255) u=-255;
+        om += (G*th - S*u)*DT;
+        th += om*DT;
+      }
+      return {pts:pts, fell:fell, steps:steps};
+    }
+    function verdict(r, kp, kd, off){
+      if (r.fell >= 0){
+        if (off > 0.05)
+          return ["bad","It fell — and the gains are the kit defaults. The only thing wrong is the balance point, off by "+off.toFixed(1)+"°. The controller obediently drove the car toward a posture it cannot hold, ran the motors into the ±255 limit, and lost it. Every gain you tuned is worthless if the target is wrong. That is what lesson 13 fixes."];
+        if (kp*S < G) return ["bad","It fell. kp is too weak to push back harder than gravity pulls — no amount of damping saves that."];
+        return ["bad","It fell."];
+      }
+      var tail = r.pts.slice(Math.round(r.pts.length*0.6));
+      var mx = 0; tail.forEach(function(x){ mx = Math.max(mx, Math.abs(x)); });
+      var peaks = 0;
+      for (var i=1;i<r.pts.length-1;i++) if (r.pts[i]>r.pts[i-1] && r.pts[i]>r.pts[i+1]) peaks++;
+      if (mx > 1.5) return ["bad","Still swinging after "+SPAN+" s — "+peaks+" swings and not settling. Not enough damping for that much stiffness."];
+      if (peaks >= 6) return ["warn",peaks+" quick swings before it settles. On the real car this is the fast tremor you can hear in the motors."];
+      var settle = 0;
+      for (var j=r.pts.length-1;j>=0;j--) if (Math.abs(r.pts[j])>0.5){ settle=j; break; }
+      var tt = (settle*DT).toFixed(2);
+      if (settle > r.pts.length*0.4) return ["warn","Recovers, but slowly — upright again after about "+tt+" s. Heavy damping makes it safe and sleepy, and slow to catch a real shove."];
+      return ["good","Clean recovery: upright again in about "+tt+" s, with "+(peaks<2?"no real overshoot":peaks+" small swings")+"."];
+    }
+    function draw(){
+      var kp = parseFloat(skp.value), kd = parseFloat(skd.value), of = parseFloat(sof.value);
+      vkp.textContent = kp.toFixed(1); vkd.textContent = kd.toFixed(2); vof.textContent = of.toFixed(1)+"°";
+      var r = sim(kp,kd,of), W=cv.width, H=cv.height, pad=40, yMax=FELL;
+      ctx.clearRect(0,0,W,H);
+      ctx.font = "17px monospace"; ctx.lineWidth = 1;
+      [-30,-15,0,15,30].forEach(function(g){
+        var y = H/2 - g/yMax*(H/2-pad);
+        ctx.strokeStyle = (g===0? C.ghost : C.line);
+        ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-8,y); ctx.stroke();
+        ctx.fillStyle = C.muted; ctx.fillText(g+"°", 4, y-5);
+      });
+      if (of > 0.05){
+        var yt = H/2 - of/yMax*(H/2-pad);
+        ctx.strokeStyle = C.amber; ctx.setLineDash([7,6]);
+        ctx.beginPath(); ctx.moveTo(pad,yt); ctx.lineTo(W-8,yt); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = C.amber; ctx.fillText("what it believes upright is", pad+10, yt-8);
+      }
+      ctx.lineWidth = 2.8; ctx.strokeStyle = r.fell>=0 ? C.red : C.cyan;
+      ctx.beginPath();
+      for (var i=0;i<r.pts.length;i++){
+        var x = pad + i/r.steps*(W-pad-10);
+        var vv = Math.max(-yMax, Math.min(yMax, r.pts[i]));
+        var y = H/2 - vv/yMax*(H/2-pad);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      if (r.fell >= 0){
+        var xf = pad + r.fell/r.steps*(W-pad-10);
+        ctx.fillStyle = C.red; ctx.fillText("fell over", Math.min(xf+10, W-150), 42);
+      }
+      ctx.fillStyle = C.muted;
+      ctx.fillText("0 s", pad, H-8); ctx.fillText(SPAN+" s", W-72, H-8);
+      ctx.fillText("lean angle after a 5° nudge", pad+80, 30);
+      var c = verdict(r,kp,kd,of);
+      var col = c[0]==="good" ? C.green : (c[0]==="bad" ? C.red : C.amber);
+      vd.innerHTML = '<span style="color:'+col+'">●</span> ' + c[1];
+    }
+    [skp,skd,sof].forEach(function(x){ x.addEventListener("input", draw); });
+    document.querySelectorAll("#l12 .btns button").forEach(function(b){
+      b.addEventListener("click", function(){
+        skp.value = b.getAttribute("data-kp");
+        skd.value = b.getAttribute("data-kd");
+        sof.value = b.getAttribute("data-of");
+        draw();
+      });
+    });
+    draw(); onTheme(draw);
+  })();
+
+  /* ================= 13 · capture the balance point ================= */
+  (function(){
+    var sv = document.getElementById("sv-cal"); if (!sv) return;
+    var s = document.getElementById("s-cal"), v = document.getElementById("v-cal"),
+        vd = document.getElementById("vd-cal");
+    var TRUE = 3.5, captured = null;
+    function draw(){
+      var hold = parseFloat(s.value);
+      v.textContent = hold.toFixed(1) + "°";
+      clear(sv);
+      sv.appendChild(el("line",{x1:40,y1:236,x2:520,y2:236,stroke:C.line,"stroke-width":1.5}));
+      // ghost: where it truly balances
+      var gh = el("g",{transform:"translate(280,196) rotate("+TRUE+")",opacity:".35"});
+      gh.appendChild(el("rect",{x:-38,y:-120,width:76,height:126,rx:9,fill:"none",stroke:C.green,
+        "stroke-width":2,"stroke-dasharray":"5 4"}));
+      sv.appendChild(gh);
+      sv.appendChild(el("text",{x:392,y:96,"font-family":"monospace","font-size":9.5,fill:C.green},
+        "where it truly balances: +"+TRUE+"°"));
+      // the car as held
+      var g = el("g",{transform:"translate(280,196) rotate("+hold+")"});
+      g.appendChild(el("rect",{x:-38,y:-120,width:76,height:126,rx:9,fill:C.panel,stroke:C.cyan,"stroke-width":2}));
+      g.appendChild(el("circle",{cx:0,cy:-70,r:6,fill:C.pink}));
+      g.appendChild(el("circle",{cx:-26,cy:22,r:18,fill:"none",stroke:C.line,"stroke-width":3}));
+      g.appendChild(el("circle",{cx:26,cy:22,r:18,fill:"none",stroke:C.line,"stroke-width":3}));
+      sv.appendChild(g);
+
+      var bx = 580;
+      sv.appendChild(el("text",{x:bx,y:52,"font-family":"monospace","font-size":10,fill:C.muted},"angle0 stored in the sketch"));
+      sv.appendChild(el("text",{x:bx,y:88,"font-family":"monospace","font-size":26,
+        fill:(captured===null?C.line:C.amber)}, captured===null ? "—" : (-captured).toFixed(1)+"°"));
+      if (captured !== null){
+        var err = Math.abs(captured - TRUE);
+        var good = err < 0.8;
+        sv.appendChild(el("text",{x:bx,y:124,"font-family":"monospace","font-size":10.5,
+          fill:good?C.green:C.red}, good ? "✓ within "+err.toFixed(1)+"° — it will stand" :
+                                           "✗ off by "+err.toFixed(1)+"° — it will run away"));
+        // consequence sketch
+        sv.appendChild(el("text",{x:bx,y:158,"font-family":"monospace","font-size":9.5,fill:C.muted},
+          "the car will then hold:"));
+        var hg = el("g",{transform:"translate("+(bx+52)+",226) rotate("+captured+") scale(.55)"});
+        hg.appendChild(el("rect",{x:-38,y:-120,width:76,height:126,rx:9,fill:C.panel,
+          stroke:good?C.green:C.red,"stroke-width":3}));
+        hg.appendChild(el("circle",{cx:-26,cy:22,r:18,fill:"none",stroke:C.line,"stroke-width":4}));
+        hg.appendChild(el("circle",{cx:26,cy:22,r:18,fill:"none",stroke:C.line,"stroke-width":4}));
+        sv.appendChild(hg);
+        if (!good){
+          sv.appendChild(el("text",{x:bx+110,y:214,"font-family":"monospace","font-size":10,fill:C.red},"…and accelerate"));
+          sv.appendChild(el("text",{x:bx+110,y:230,"font-family":"monospace","font-size":10,fill:C.red},"that way, forever."));
+        }
+        vd.innerHTML = good
+          ? '<span style="color:'+C.green+'">●</span> Captured at '+captured.toFixed(1)+'°, which is within '+err.toFixed(1)+'° of the true balance point. The angle loop now has a target it can actually hold.'
+          : '<span style="color:'+C.red+'">●</span> Captured at '+captured.toFixed(1)+'°, but this car balances at +'+TRUE+'°. The controller will now faithfully hold a '+err.toFixed(1)+'° lean — and a leaning car accelerates. It will roll away, hit the PWM limit and fall, with perfectly good gains.';
+      } else {
+        vd.innerHTML = 'Move the slider to the posture where you would hold the car, then press the button. The dashed outline is where this car actually balances — in real life nobody tells you that, you have to feel for it.';
+      }
+    }
+    s.addEventListener("input", function(){ captured = null; draw(); });
+    document.getElementById("b-cal").addEventListener("click", function(){
+      captured = parseFloat(s.value); draw();
+    });
+    document.getElementById("b-calreset").addEventListener("click", function(){ captured = null; draw(); });
+    draw(); onTheme(draw);
+  })();
+
+  /* ================= the simulator =================
+     Physics: a simplified inverted pendulum on a driven cart — no slip, no motor lag,
+     one wheel pair. The CONTROL side is not simplified: it is the arithmetic out of
+     10_Speed_loop.ino, same gains, same ±255 clamp, same ±3550 anti-windup, same
+     cut-out above 80°, and the speed loop really does run once every 8 cycles.      */
+  (function(){
+    var cv = document.getElementById("cv-sim"); if (!cv) return;
+    var ctx = cv.getContext("2d");
+    var tr = document.getElementById("cv-simtrace"), tctx = tr.getContext("2d");
+    var ro = document.getElementById("ro-sim"), vd = document.getElementById("vd-sim");
+
+    // --- plant -------------------------------------------------------------
+    var G = 9.81, MASS = 1.2, L = 0.11, KF = 4.5, FRICTION = 0.8;
+    // Encoder scaling is chosen so that `speeds` (pulses per 40 ms window) lands in the
+    // same small range the real sketch sees. Too many counts per metre and the speed
+    // loop out-shouts the angle loop, braking the car exactly when it needs to drive
+    // forward to get back under itself.
+    var PULSES_PER_M = 600;
+    var PPM = 250;                  // screen pixels per metre
+    var WHEEL_R = 0.0335;
+
+    // --- state -------------------------------------------------------------
+    var th, om, x, v, fell, pulses, tsim;
+    // --- filter state ------------------------------------------------------
+    var kAngle, qBias, P, accPrev;
+    // --- controller state --------------------------------------------------
+    var cc, PD_pwm, PI_pwm, pwm, speedsFilterOld, speedsFilter, positions, setp0, drive;
+    var hist;
+
+    var ON = { angle:true, speed:true, kalman:true };
+    var RATE = 0.005;
+    var GYRO_BIAS = 0.5;
+    // How strongly the cart's own acceleration corrupts the accelerometer reading.
+    // Physically real (lesson 07 shows it in isolation), but it feeds back into the
+    // control loop here, so it is kept small enough that the kit's own gains still work.
+    var ART = 0.15;
+
+    function reset(){
+      th = 1.5*Math.PI/180; om = 0; x = 0; v = 0; fell = false; pulses = 0; tsim = 0;
+      // The filter starts already settled on the true angle: on the real car you hold it
+      // still at power-up while setup() runs. Starting it at zero would just make the
+      // simulator lose the first half-second every time, which teaches nothing.
+      kAngle = th*180/Math.PI; qBias = 0; P = [[1,0],[0,1]]; accPrev = kAngle;
+      cc = 0; PD_pwm = 0; PI_pwm = 0; pwm = 0;
+      speedsFilterOld = 0; speedsFilter = 0; positions = 0;
+      hist = [];
+      settleFilter();
+    }
+    setp0 = 0; drive = "S";
+    reset();
+
+    // The two-state filter from the sketch, lifted verbatim. Returns the de-biased rate.
+    function kalmanStep(accAngle, gyroRate, dt){
+      var Q_angle = 0.001, Q_gyro = 0.003, R_angle = 0.5;
+      kAngle += (gyroRate - qBias)*dt;
+      var err = accAngle - kAngle;
+      var Pd0 = Q_angle - P[0][1] - P[1][0], Pd1 = -P[1][1], Pd2 = -P[1][1], Pd3 = Q_gyro;
+      P[0][0] += Pd0*dt; P[0][1] += Pd1*dt; P[1][0] += Pd2*dt; P[1][1] += Pd3*dt;
+      var E = R_angle + P[0][0], K0 = P[0][0]/E, K1 = P[1][0]/E;
+      var t0 = P[0][0], t1 = P[0][1];
+      P[0][0] -= K0*t0; P[0][1] -= K0*t1; P[1][0] -= K1*t0; P[1][1] -= K1*t1;
+      qBias += K1*err;
+      var rate = gyroRate - qBias;
+      kAngle += K0*err;
+      return rate;
+    }
+
+    // P starts at 1, which makes the Kalman gain 0.67 — for the first second or so the
+    // filter simply copies the accelerometer. On the real car that does not matter,
+    // because you hold it still while setup() runs. Do the same here: settle the filter
+    // against a stationary car before handing control over.
+    function settleFilter(){
+      var trueDeg = th*180/Math.PI;
+      for (var i=0;i<800;i++)
+        kalmanStep(trueDeg + (Math.random()-0.5)*5, GYRO_BIAS + (Math.random()-0.5)*2, 0.005);
+      kAngle = trueDeg;
+    }
+
+    function S(id){ return document.getElementById(id); }
+    var els = { kp:S("s-skp"), kd:S("s-skd"), ks:S("s-sks"), ki:S("s-ski"), of:S("s-sof") };
+    var labs = { kp:S("v-skp"), kd:S("v-skd"), ks:S("v-sks"), ki:S("v-ski"), of:S("v-sof") };
+
+    function gains(){
+      return { kp:+els.kp.value, kd:+els.kd.value, ks:+els.ks.value,
+               ki:+els.ki.value, of:+els.of.value };
+    }
+    function showGains(){
+      var g = gains();
+      labs.kp.textContent = g.kp.toFixed(1);
+      labs.kd.textContent = g.kd.toFixed(2);
+      labs.ks.textContent = g.ks.toFixed(2);
+      labs.ki.textContent = g.ki.toFixed(3);
+      labs.of.textContent = (g.of>0?"+":"") + g.of.toFixed(1) + "°";
+    }
+    Object.keys(els).forEach(function(k){ els[k].addEventListener("input", showGains); });
+    showGains();
+
+    // --- one control cycle, exactly as the sketch orders it -----------------
+    function controlCycle(dt){
+      var g = gains();
+      var thDeg = th*180/Math.PI, omDeg = om*180/Math.PI;
+
+      // sensors. The accelerometer is fooled by the cart's own acceleration —
+      // that is lesson 07's "tap it" effect, here for free.
+      // The 0.4 factor: the board is mounted high on the body, where part of the cart's
+      // acceleration is cancelled by the pendulum's own swing. At full strength this
+      // artefact alone drags the estimate down faster than the filter can recover.
+      var aCart = KF*pwm/255/MASS;
+      var accAngle = thDeg - Math.atan2(aCart, G)*180/Math.PI*ART + (Math.random()-0.5)*5;
+      var gyroRate = omDeg + GYRO_BIAS + (Math.random()-0.5)*2;
+
+      var angleUsed, rateUsed;
+      if (ON.kalman){
+        rateUsed  = kalmanStep(accAngle, gyroRate, dt);
+        angleUsed = kAngle;
+      } else {
+        // no filter: the raw accelerometer angle, and its own noisy derivative
+        angleUsed = accAngle;
+        rateUsed  = (accAngle - accPrev)/dt;
+        accPrev   = accAngle;
+      }
+
+      PD_pwm = ON.angle ? (g.kp*(angleUsed - g.of) + g.kd*rateUsed) : 0;
+
+      cc++;
+      if (cc >= 8){                       // 5 ms × 8 = 40 ms, exactly like the sketch
+        var speeds = pulses; pulses = 0;
+        speedsFilterOld *= 0.7;
+        speedsFilter = speedsFilterOld + speeds*0.3;
+        speedsFilterOld = speedsFilter;
+        positions += speedsFilter;
+        positions = Math.max(-3550, Math.min(3550, positions));
+        // Sign note: the sketch writes this as (setp0 - speeds), because there its encoder
+        // count is signed by the PWM direction, not by the world. Here x and speeds are
+        // signed in world coordinates, so the term flips. The behaviour is the same one:
+        // a forward drift must command a BACKWARD lean, and leaning back is what actually
+        // slows the car. Get this sign wrong and the speed loop confidently tips it over.
+        PI_pwm = ON.speed ? (g.ki*(positions - setp0*40) + g.ks*(speedsFilter - setp0)) : 0;
+        cc = 0;
+      }
+
+      pwm = PD_pwm + PI_pwm;
+      if (pwm >  255) pwm =  255;
+      if (pwm < -255) pwm = -255;
+      if (angleUsed > 80 || angleUsed < -80) pwm = 0;   // the sketch's safety cut-out
+    }
+
+    // --- physics, integrated finely underneath the controller ---------------
+    function physics(dt){
+      var a = KF*pwm/255/MASS - FRICTION*v;
+      var thAcc = (G*Math.sin(th) - a*Math.cos(th))/L;
+      om += thAcc*dt;
+      th += om*dt;
+      v  += a*dt;
+      x  += v*dt;
+      pulses += Math.abs(v)*PULSES_PER_M*dt * (v<0?-1:1);
+      if (Math.abs(th) > 60*Math.PI/180){ fell = true; om = 0; v *= 0.5; }
+    }
+
+    var acc = 0, lastT = performance.now();
+    var PHYS = 0.001;
+    watchVisibility(cv, "sim");
+
+    function stepAll(now){
+      var elapsed = Math.min(0.05, (now - lastT)/1000);
+      lastT = now;
+      if (!visible["sim"]) { requestAnimationFrame(stepAll); return; }
+      if (!fell){
+        acc += elapsed;
+        var ctrlAcc = 0;
+        while (acc >= PHYS){
+          ctrlAcc += PHYS;
+          if (ctrlAcc >= RATE - 1e-9){ controlCycle(RATE); ctrlAcc = 0; }
+          physics(PHYS);
+          acc -= PHYS; tsim += PHYS;
+        }
+        hist.push({t:tsim, th:th*180/Math.PI, pwm:pwm, tgt:gains().of});
+        if (hist.length > 900) hist.shift();
+      }
+      drawScene(); drawTrace(); report();
+      requestAnimationFrame(stepAll);
+    }
+
+    // --- drawing ------------------------------------------------------------
+    function drawScene(){
+      var W = cv.width, H = cv.height, groundY = 292, cx = W/2;
+      ctx.clearRect(0,0,W,H);
+
+      // ground + scrolling texture so travel is visible
+      ctx.strokeStyle = C.line; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(W,groundY); ctx.stroke();
+      ctx.lineWidth = 1;
+      var off = (-x*PPM) % 40;
+      for (var gx = off; gx < W; gx += 40){
+        ctx.strokeStyle = C.line;
+        ctx.beginPath(); ctx.moveTo(gx, groundY); ctx.lineTo(gx-10, groundY+13); ctx.stroke();
+      }
+      // home marker
+      var homeX = cx - x*PPM;
+      if (homeX > -20 && homeX < W+20){
+        ctx.strokeStyle = C.green; ctx.setLineDash([5,5]);
+        ctx.beginPath(); ctx.moveTo(homeX, groundY-190); ctx.lineTo(homeX, groundY+18); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = C.green; ctx.font = "16px monospace";
+        ctx.fillText("home", homeX+6, groundY+34);
+      }
+      // true vertical
+      ctx.strokeStyle = C.line; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(cx, groundY-215); ctx.lineTo(cx, groundY); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // the car
+      var axleY = groundY - 26;
+      ctx.save(); ctx.translate(cx, axleY); ctx.rotate(th);
+      var bodyCol = fell ? C.red : C.cyan;
+      ctx.strokeStyle = bodyCol; ctx.lineWidth = 3;
+      ctx.fillStyle = C.panel;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-34,-168,68,168,8) : ctx.rect(-34,-168,68,168);
+      ctx.fill(); ctx.stroke();
+      // sensor board
+      ctx.fillStyle = C.pink;
+      ctx.beginPath(); ctx.arc(0,-118,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = C.muted; ctx.font = "13px monospace";
+      ctx.fillText("MPU", -16, -98);
+      // battery
+      ctx.fillStyle = C.line; ctx.fillRect(-22,-64,44,30);
+      ctx.restore();
+
+      // wheels, spinning by distance travelled
+      var spin = x/WHEEL_R;
+      [-30, 30].forEach(function(dx){
+        ctx.save(); ctx.translate(cx+dx, groundY-26);
+        ctx.strokeStyle = fell ? C.red : C.muted; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.stroke();
+        ctx.rotate(spin);
+        ctx.strokeStyle = C.line; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-26,0); ctx.lineTo(26,0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,-26); ctx.lineTo(0,26); ctx.stroke();
+        ctx.restore();
+      });
+
+      // motor drive arrow
+      if (!fell && Math.abs(pwm) > 6){
+        var dir = pwm>0 ? 1 : -1, len = 24 + Math.abs(pwm)/255*90;
+        ctx.strokeStyle = C.amber; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(cx+dir*46, groundY+30); ctx.lineTo(cx+dir*(46+len), groundY+30); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx+dir*(46+len)-dir*11, groundY+22);
+        ctx.lineTo(cx+dir*(46+len), groundY+30);
+        ctx.lineTo(cx+dir*(46+len)-dir*11, groundY+38); ctx.stroke();
+        ctx.fillStyle = C.amber; ctx.font = "15px monospace";
+        ctx.fillText("PWM " + Math.round(pwm), cx+dir*46 + (dir>0?6:-140), groundY+56);
+      }
+
+      // "what it believes upright is"
+      var g = gains();
+      if (Math.abs(g.of) > 0.05){
+        ctx.save(); ctx.translate(cx, axleY); ctx.rotate(g.of*Math.PI/180);
+        ctx.strokeStyle = C.amber; ctx.setLineDash([6,5]); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-200); ctx.stroke();
+        ctx.setLineDash([]); ctx.restore();
+        ctx.fillStyle = C.amber; ctx.font = "15px monospace";
+        ctx.fillText("what it believes is upright", cx+16, axleY-206);
+      }
+
+      if (fell){
+        ctx.fillStyle = C.red; ctx.font = "26px monospace";
+        ctx.fillText("it fell over", 40, 56);
+        ctx.fillStyle = C.muted; ctx.font = "16px monospace";
+        ctx.fillText("press “stand it back up”", 40, 82);
+      }
+    }
+
+    function drawTrace(){
+      var W = tr.width, H = tr.height, pad = 44;
+      tctx.clearRect(0,0,W,H);
+      tctx.font = "15px monospace";
+      [-20,0,20].forEach(function(v0){
+        var y = H/2 - v0/30*(H/2-18);
+        tctx.strokeStyle = v0===0 ? C.ghost : C.line; tctx.lineWidth = 1;
+        tctx.beginPath(); tctx.moveTo(pad,y); tctx.lineTo(W-8,y); tctx.stroke();
+        tctx.fillStyle = C.muted; tctx.fillText(v0+"°", 4, y-3);
+      });
+      if (hist.length > 1){
+        var t1 = hist[hist.length-1].t, t0 = Math.max(0, t1-7);
+        function line(get, col, w, scale){
+          tctx.strokeStyle = col; tctx.lineWidth = w; tctx.beginPath();
+          var started = false;
+          for (var i=0;i<hist.length;i++){
+            if (hist[i].t < t0) continue;
+            var px = pad + (hist[i].t-t0)/7*(W-pad-10);
+            var val = Math.max(-30, Math.min(30, get(hist[i])*scale));
+            var py = H/2 - val/30*(H/2-18);
+            if (!started){ tctx.moveTo(px,py); started = true; } else tctx.lineTo(px,py);
+          }
+          tctx.stroke();
+        }
+        line(function(h){return h.pwm;}, C.amber, 1.5, 30/255);
+        line(function(h){return h.th;}, C.cyan, 2.4, 1);
+      }
+      tctx.fillStyle = C.cyan; tctx.fillRect(pad+8,10,15,4);
+      tctx.fillStyle = C.muted; tctx.fillText("lean angle", pad+30, 16);
+      tctx.fillStyle = C.amber; tctx.fillRect(pad+220,10,15,4);
+      tctx.fillStyle = C.muted; tctx.fillText("motor PWM", pad+242, 16);
+      tctx.fillText("last 7 seconds", W-160, 16);
+    }
+
+    function report(){
+      var g = gains();
+      var away = Math.abs(x);
+      ro.innerHTML =
+        '<span class="ro">lean <b>' + (th*180/Math.PI).toFixed(1) + '°</b></span>' +
+        '<span class="ro a">PWM <b>' + Math.round(pwm) + '</b></span>' +
+        '<span class="ro g">from home <b>' + x.toFixed(2) + ' m</b></span>' +
+        '<span class="ro v">speed <b>' + v.toFixed(2) + ' m/s</b></span>' +
+        '<span class="ro">loop <b>' + (RATE*1000) + ' ms</b></span>';
+      // How much position offset the speed loop must hold to cancel a wrong balance
+      // point: PI must supply kp*of, and PI comes from ki*positions. Past the sketch's
+      // ±3550 anti-windup clamp the trick stops working and the car simply leaves.
+      var needed = g.ki > 0 ? Math.abs(g.kp*g.of/g.ki) : Infinity;
+      var absorbable = needed < 3550;
+      // ringing detector: zero crossings of the lean over the last couple of seconds
+      var ring = 0, amp = 0;
+      if (hist.length > 60){
+        var seg = hist.slice(-Math.min(hist.length, 400));
+        for (var i=1;i<seg.length;i++){
+          if ((seg[i].th > 0) !== (seg[i-1].th > 0)) ring++;
+          amp = Math.max(amp, Math.abs(seg[i].th));
+        }
+      }
+      var msg, col = C.green;
+      if (fell){
+        col = C.red;
+        if (!ON.angle) msg = "Nothing was holding it up. The angle loop is the whole trick — this is the car before lesson 09.";
+        else if (!ON.kalman) msg = "It shook itself to pieces. Without the filter the controller is reacting to sensor noise instead of to the car, and the D term multiplies that noise. Precisely why lesson 08 exists.";
+        else if (RATE > 0.03) msg = "A " + (RATE*1000) + " ms loop is far too slow: between two decisions the car has already fallen further than the next correction can undo. Why lesson 04 exists.";
+        else if (!absorbable) msg = "The gains are fine — the balance point is not. To cancel a " + g.of.toFixed(1) + "° error the speed loop would need to hold " + Math.round(needed) + " counts of position offset, past the sketch's ±3550 anti-windup limit. Nothing left to give, so it left. Lesson 13.";
+        else if (g.kd < 0.05) msg = "No damping. Every swing overshoots a little more than the last until it runs out of room. Lesson 12.";
+        else msg = "It fell. Stand it back up, then change one thing at a time.";
+      } else if (!ON.speed){
+        col = C.amber;
+        msg = "Balancing nicely — and quietly walking away, now " + away.toFixed(2) + " m from home and not coming back. Nothing in the angle loop knows or cares where the car is. That gap is exactly lesson 10.";
+      } else if (Math.abs(g.of) > 0.8 && away > 0.5){
+        col = C.amber;
+        msg = "Look what it is doing: still upright, but parked " + away.toFixed(2) + " m from home and holding a permanent lean. A " + g.of.toFixed(1) + "° balance-point error does not topple the car — the speed loop quietly absorbs it by driving somewhere else and staying there. Push the error past about 8° and the ±3550 limit runs out. Lesson 13.";
+      } else if (ring > 8 && amp > 0.8) {
+        col = C.amber;
+        msg = "It is standing, but ringing: " + Math.round(ring/2) + " swings in the last two seconds, up to " + amp.toFixed(1) + "°. That is what too little kd looks and sounds like — on the real car you hear it in the motors.";
+      } else if (away > 0.6){
+        col = C.amber;
+        msg = "Off on a trip: " + away.toFixed(2) + " m from home. Watch it lean the other way to brake — that backward lean is the only brake a balancing robot has.";
+      } else if (Math.abs(th*180/Math.PI) > 14){
+        col = C.amber;
+        msg = "Leaning hard at " + (th*180/Math.PI).toFixed(0) + "°. Either it is accelerating on purpose, or it is in trouble.";
+      } else {
+        msg = "Standing. Notice it is never actually still — it is falling and catching itself several times a second, which is all balancing has ever been.";
+      }
+      vd.innerHTML = '<span style="color:'+col+'">●</span> ' + msg;
+      S("sim-live").textContent = fell ? "● fallen" : "● running";
+      S("sim-live").style.color = fell ? C.red : C.green;
+    }
+
+    // --- controls ------------------------------------------------------------
+    document.querySelectorAll("#sim-toggles button").forEach(function(b){
+      b.addEventListener("click", function(){
+        var k = b.getAttribute("data-tg");
+        ON[k] = !ON[k]; b.classList.toggle("on", ON[k]);
+      });
+    });
+    document.querySelectorAll("#sim-rate button").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("#sim-rate button").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); RATE = +b.getAttribute("data-rate")/1000;
+      });
+    });
+    document.querySelectorAll("[data-drive]").forEach(function(b){
+      b.addEventListener("click", function(){
+        document.querySelectorAll("[data-drive]").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on");
+        drive = b.getAttribute("data-drive");
+        setp0 = drive==="F" ? 6 : drive==="B" ? -6 : 0;
+      });
+    });
+    S("sim-push").addEventListener("click", function(){
+      om += (Math.random()<0.5?-1:1) * 2.6;
+    });
+    S("sim-reset").addEventListener("click", function(){
+      reset(); setp0 = drive==="F" ? 6 : drive==="B" ? -6 : 0;
+    });
+
+    var PRESETS = {
+      kit:      {kp:34, kd:0.62, ks:3.6, ki:0.08, of:0,   rate:5,  on:{angle:1,speed:1,kalman:1}},
+      nospeed:  {kp:34, kd:0.62, ks:3.6, ki:0.08, of:0,   rate:5,  on:{angle:1,speed:0,kalman:1}},
+      nokalman: {kp:34, kd:0.62, ks:3.6, ki:0.08, of:0,   rate:5,  on:{angle:1,speed:1,kalman:0}},
+      slow:     {kp:34, kd:0.62, ks:3.6, ki:0.08, of:0,   rate:50, on:{angle:1,speed:1,kalman:1}},
+      badzero:  {kp:34, kd:0.62, ks:3.6, ki:0.08, of:3.0, rate:5,  on:{angle:1,speed:1,kalman:1}},
+      badzero2: {kp:34, kd:0.62, ks:3.6, ki:0.08, of:9.0, rate:5,  on:{angle:1,speed:1,kalman:1}},
+      nod:      {kp:34, kd:0,    ks:3.6, ki:0.08, of:0,   rate:5,  on:{angle:1,speed:1,kalman:1}}
+    };
+    document.querySelectorAll("[data-simpreset]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var p = PRESETS[b.getAttribute("data-simpreset")];
+        els.kp.value=p.kp; els.kd.value=p.kd; els.ks.value=p.ks;
+        els.ki.value=p.ki; els.of.value=p.of;
+        showGains();
+        RATE = p.rate/1000;
+        document.querySelectorAll("#sim-rate button").forEach(function(x){
+          x.classList.toggle("on", +x.getAttribute("data-rate") === p.rate); });
+        ON.angle=!!p.on.angle; ON.speed=!!p.on.speed; ON.kalman=!!p.on.kalman;
+        document.querySelectorAll("#sim-toggles button").forEach(function(x){
+          x.classList.toggle("on", ON[x.getAttribute("data-tg")]); });
+        reset();
+      });
+    });
+
+    requestAnimationFrame(stepAll);
+  })();
+
+  /* ================= board pin map ================= */
+  (function(){
+    var sv = document.getElementById("sv-board"); if (!sv) return;
+    var COL = {MOT:C.cyan,PWM:C.cyan,ENC:C.green,BT:C.violet,BUZ:C.amber,BTN:C.amber,I2C:C.pink};
+    var OWNER = {"0":"HC-06 RX","1":"HC-06 TX","4":"encoder R","5":"encoder L","6":"left_L2",
+      "7":"left_L1","8":"right_R1","9":"PWM_L","10":"PWM_R","11":"buzzer","12":"right_R2",
+      "13":"button","A4":"SDA","A5":"SCL"};
+    function build(){
+    clear(sv);
+    sv.appendChild(el("rect",{x:110,y:66,width:680,height:96,rx:10,fill:C.panel,stroke:C.line}));
+    sv.appendChild(el("text",{x:450,y:106,"text-anchor":"middle","font-family":"monospace",
+      "font-size":13,fill:C.muted},"Arduino UNO"));
+    sv.appendChild(el("text",{x:450,y:126,"text-anchor":"middle","font-family":"monospace",
+      "font-size":9.5,fill:C.line},"ATmega328P · 16 MHz · 32 KB flash · 2 KB RAM"));
+    var dig = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13"];
+    dig.forEach(function(p,i){
+      var x = 126 + i*48, role = PIN_ROLE[p], col = role ? COL[role] : C.line;
+      sv.appendChild(el("rect",{x:x,y:34,width:40,height:26,rx:4,
+        fill: role ? col : "none", stroke: role ? col : C.line}));
+      sv.appendChild(el("text",{x:x+20,y:52,"text-anchor":"middle","font-family":"monospace",
+        "font-size":10.5,fill: role ? C.bg : C.line, "font-weight": role?"bold":"normal"},"D"+p));
+      sv.appendChild(el("text",{x:x+20,y:26,"text-anchor":"middle","font-family":"monospace",
+        "font-size":7.5,fill:C.muted}, OWNER[p] || "free"));
+    });
+    ["A0","A1","A2","A3","A4","A5"].forEach(function(p,i){
+      var x = 126 + i*48, role = PIN_ROLE[p], col = role ? COL[role] : C.line;
+      sv.appendChild(el("rect",{x:x,y:168,width:40,height:26,rx:4,
+        fill: role ? col : "none", stroke: role ? col : C.line}));
+      sv.appendChild(el("text",{x:x+20,y:186,"text-anchor":"middle","font-family":"monospace",
+        "font-size":10.5,fill: role ? C.bg : C.line, "font-weight": role?"bold":"normal"},p));
+      sv.appendChild(el("text",{x:x+20,y:208,"text-anchor":"middle","font-family":"monospace",
+        "font-size":7.5,fill:C.muted}, OWNER[p] || "free"));
+    });
+    sv.appendChild(el("text",{x:430,y:186,"font-family":"monospace","font-size":9.5,fill:C.amber},
+      "D3 and D11 lose analogWrite once MsTimer2 claims Timer2"));
+    }
+    build(); onTheme(build);
+  })();
+
+})();
+</script>
+</body>
+</html>

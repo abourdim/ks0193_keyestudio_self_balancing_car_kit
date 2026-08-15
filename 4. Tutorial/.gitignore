@@ -1,0 +1,6 @@
+# Everything launch.sh generates: the unpacked bundled libraries, the throwaway
+# PlatformIO project per lesson, and the arduino-cli build output.
+.build/
+
+# arduino-cli installed locally by launch.sh option 2.
+.tools/
