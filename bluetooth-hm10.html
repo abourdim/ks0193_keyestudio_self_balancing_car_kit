@@ -81,6 +81,19 @@
   .good h4{margin:0 0 8px;font-size:13px;color:var(--green);}
   .good p:last-child{margin-bottom:0;}
 
+  figure{margin:0 0 20px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:10px;padding:18px 16px 12px;}
+  .wire-svg{display:block;width:100%;height:auto;}
+  .wire-svg text{font-family:var(--mono);}
+  .wire-svg .box{fill:var(--panel);stroke:var(--border);stroke-width:1.5;}
+  .wire-svg .boxname{fill:var(--text);font-size:15px;font-weight:700;}
+  .wire-svg .boxsub{fill:var(--ghost);font-size:10.5px;letter-spacing:.1em;}
+  .wire-svg .pin{fill:var(--muted);font-size:13px;}
+  .wire-svg .pad{fill:var(--panel-2);stroke:var(--ghost);stroke-width:1.5;}
+  .wire-svg .w{fill:none;stroke-width:2.5;stroke-linecap:round;}
+  .wire-svg .note{fill:var(--muted);font-size:11px;}
+  .wire-svg .xlab{fill:var(--danger);font-size:11.5px;font-weight:700;letter-spacing:.08em;}
+  figcaption{margin:12px 2px 0;font-size:11.5px;color:var(--muted);line-height:1.5;}
   pre{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
     padding:14px 16px;overflow-x:auto;margin:0 0 18px;font-size:12.5px;line-height:1.5;}
   pre code{background:none;border:0;padding:0;color:var(--text);}
@@ -149,6 +162,70 @@ hardware UART, <code>D0</code>/<code>D1</code>.</p>
   HM-10's default baud is 9600 as well. Lessons 05, 11, 12 and 13 compile and run
   untouched.</p>
 </div>
+
+<h2>Wiring</h2>
+
+<p>Power and ground go straight across. The two data lines <strong>cross</strong> — that is
+the whole diagram, and the one thing worth getting right before anything else:</p>
+
+<figure>
+<svg class="wire-svg" viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="wtitle wdesc">
+  <title id="wtitle">HM-10 to board wiring</title>
+  <desc id="wdesc">HM-10 VCC connects to 3.3 volts and GND to GND, straight across. The
+  module's TXD crosses over to the board's RX, and the module's RXD crosses over to the
+  board's TX.</desc>
+
+  <rect class="box" x="70" y="70" width="200" height="270" rx="10"/>
+  <text class="boxname" x="90" y="103">HM-10</text>
+  <text class="boxsub"  x="90" y="122">BLE MODULE</text>
+
+  <rect class="box" x="450" y="70" width="200" height="270" rx="10"/>
+  <text class="boxname" x="470" y="103">UNO</text>
+  <text class="boxsub"  x="470" y="122">XBEE SOCKET</text>
+
+  <text class="pin" x="252" y="169" text-anchor="end">VCC</text>
+  <text class="pin" x="252" y="219" text-anchor="end">GND</text>
+  <text class="pin" x="252" y="269" text-anchor="end">TXD</text>
+  <text class="pin" x="252" y="319" text-anchor="end">RXD</text>
+  <circle class="pad" cx="270" cy="164" r="5"/>
+  <circle class="pad" cx="270" cy="214" r="5"/>
+  <circle class="pad" cx="270" cy="264" r="5"/>
+  <circle class="pad" cx="270" cy="314" r="5"/>
+
+  <text class="pin" x="468" y="169">3V3</text>
+  <text class="pin" x="468" y="219">GND</text>
+  <text class="pin" x="468" y="269">TX &#8212; D1</text>
+  <text class="pin" x="468" y="319">RX &#8212; D0</text>
+  <circle class="pad" cx="450" cy="164" r="5"/>
+  <circle class="pad" cx="450" cy="214" r="5"/>
+  <circle class="pad" cx="450" cy="264" r="5"/>
+  <circle class="pad" cx="450" cy="314" r="5"/>
+
+  <path class="w" stroke="var(--green)" d="M275,164 L445,164"/>
+  <path class="w" stroke="var(--muted)" d="M275,214 L445,214"/>
+  <path class="w" stroke="var(--cyan)"  d="M275,264 C345,264 375,314 445,314"/>
+  <path class="w" stroke="var(--amber)" d="M275,314 C345,314 375,264 445,264"/>
+
+  <text class="note" x="360" y="152" text-anchor="middle">3.3 V</text>
+  <text class="note" x="360" y="202" text-anchor="middle">common ground</text>
+  <text class="xlab" x="360" y="365" text-anchor="middle">TX &#8594; RX&#8195;&#8195;RX &#8594; TX</text>
+</svg>
+<figcaption>An XBee-carrier HM-10 does this crossover inside the carrier, so it just plugs
+in. A bare breakout does not — you wire it yourself, and this is the wiring. Pins the
+sketches never use (STATE, EN/BRK) can be left unconnected.</figcaption>
+</figure>
+
+<div class="warn">
+  <h4>A straight-through mistake looks like a dead module, not a wiring fault</h4>
+  <p>Swap the two data lines and nothing errors: the module still powers up, still
+  advertises, and your phone still connects. You simply never reach the Arduino. Because
+  the BLE side looks perfectly healthy, this is the slowest fault on the page to
+  diagnose — check the crossover first, not last.</p>
+</div>
+
+<p>The socket is a 3.3 V system, which suits the HM-10 natively. Do not feed a bare module
+from the 5 V rail.</p>
 
 <h2>The BLE side</h2>
 
