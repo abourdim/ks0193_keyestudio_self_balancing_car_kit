@@ -299,6 +299,70 @@ serial monitor is a stand-in for the phone. Type the same single characters —
 command protocol with no radio in the picture at all. Prove the firmware there first, then
 turn the radio on and you are only debugging the BLE link.</p>
 
+<h2>Can SoftwareSerial avoid it?</h2>
+
+<p>The obvious escape is to move the module off <code>D0</code>/<code>D1</code> onto two
+spare pins with <code>SoftwareSerial</code>, leaving the hardware UART to the USB chip.
+On this kit that does not work — for two independent reasons, the first of which will not
+even link.</p>
+
+<h3>1 · SoftwareSerial and PinChangeInt claim the same ISRs</h3>
+
+<p>The bundled <code>PinChangeInt.h</code> defines all three pin-change vectors:</p>
+
+<pre><code>477: ISR(PCINT0_vect)     // PORTB — D8–D13
+525: ISR(PCINT1_vect)     // PORTC — A0–A5
+535: ISR(PCINT2_vect)     // PORTD — D0–D7</code></pre>
+
+<p><code>SoftwareSerial.cpp</code> in the AVR core defines the same three, as aliases of one
+handler. Link both and the build dies on <code>multiple definition of __vector_N</code>.</p>
+
+<div class="warn">
+  <h4>The NO_PORTx_PINCHANGES escapes do not save you</h4>
+  <p><code>PinChangeInt</code> can be told to leave a port alone — but the encoders sit on
+  <strong>D4/D5, which is PORTD</strong>, so it must keep <code>PCINT2_vect</code>. And
+  <code>SoftwareSerial</code> defines <code>PCINT2_vect</code> unconditionally. There is no
+  combination of defines in which both libraries coexist on this kit.</p>
+</div>
+
+<h3>2 · It would wreck the control loop even if it linked</h3>
+
+<p><code>SoftwareSerial</code> bit-bangs with <strong>interrupts disabled for a whole
+byte</strong>: <code>write()</code> wraps the transmission in <code>cli()</code>, and receive
+bit-bangs inside the pin-change ISR. At 9600 baud that is roughly <strong>1.04 ms of
+interrupt blackout per byte</strong>, in each direction.</p>
+
+<div class="warn">
+  <h4>One byte costs a fifth of a control tick</h4>
+  <p>The balance loop is <code>MsTimer2::set(5, …)</code> — a 5 ms tick — and the Kalman
+  filter uses a <em>fixed</em> <code>dt = 0.005</code>. Jitter is therefore never measured,
+  just silently wrong. Lesson 11 echoes every byte it receives and lesson 12 prints a float
+  back on every tuning key, so a single command can stall the controller for several
+  milliseconds. On a machine whose entire job is not falling over, that is not a margin
+  worth spending.</p>
+</div>
+
+<h3>What to do instead</h3>
+
+<div class="tw">
+<table>
+  <tr><th>Option</th><th>Verdict</th></tr>
+  <tr><td>The shield's <strong>Bluetooth switch</strong></td><td class="yes">Already exists, costs nothing, and solves exactly this. Use it.</td></tr>
+  <tr><td><a href="porting-esp32-s3.html">Port to ESP32-S3</a></td><td class="yes">Three hardware UARTs and a pin matrix — route the HM-10 to any two free GPIOs and the conflict evaporates. A real point in favour of the port.</td></tr>
+  <tr><td>Move the encoders to D2/D3 first</td><td>Viable but involved — see below.</td></tr>
+  <tr><td><strong>AltSoftSerial</strong></td><td class="no">Dead end. It uses Timer1, and Timer1 generates the PWM on D9/D10 — which are <code>PWM_L</code> and <code>PWM_R</code>.</td></tr>
+</table>
+</div>
+
+<p>If you insist on <code>SoftwareSerial</code> on the UNO: <code>D2</code> and <code>D3</code>
+are unreferenced by all thirteen sketches, and they are the real <code>INT0</code>/<code>INT1</code>
+external interrupts — so plain <code>attachInterrupt</code> replaces <code>PinChangeInt</code>
+outright. Jumper the encoder signals across from D4/D5 (p. 48 notes the control pins are all
+brought out on the shield), and <code>SoftwareSerial</code> can then own the pin-change
+vectors. That clears blocker 1, and incidentally removes one of the two hard blockers in the
+ESP32 port as well. Blocker 2 still stands, so only take this route if you are also willing
+to loosen the 5 ms tick.</p>
+
 <h2>The BLE side</h2>
 
 <p>The HM-10 exposes a transparent serial pipe as a single GATT characteristic — write to
