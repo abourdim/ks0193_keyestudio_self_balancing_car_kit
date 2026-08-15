@@ -227,6 +227,78 @@ sketches never use (STATE, EN/BRK) can be left unconnected.</figcaption>
 <p>The socket is a 3.3 V system, which suits the HM-10 natively. Do not feed a bare module
 from the 5 V rail.</p>
 
+<h2>Why receiving is the direction that conflicts</h2>
+
+<p>The XBee socket sits on the same hardware UART as the USB-serial chip — and the two
+directions are <strong>not</strong> symmetric:</p>
+
+<figure>
+<svg class="wire-svg shared-svg" viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="stitle sdesc">
+  <title id="stitle">Both the module and the USB chip share the Arduino's UART</title>
+  <desc id="sdesc">On D1, the Arduino transmits to two listeners, which is safe. On D0,
+  both the HM-10 and the USB-serial chip can transmit into the one Arduino receive pin,
+  which collides. The shield's Bluetooth switch breaks the module's side.</desc>
+  <defs>
+    <marker id="arrOk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--green)"/></marker>
+    <marker id="arrBad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--danger)"/></marker>
+  </defs>
+
+  <rect class="box" x="20" y="100" width="130" height="90" rx="9"/>
+  <text class="boxname" x="85" y="140" text-anchor="middle" style="font-size:14px">HM-10</text>
+  <text class="boxsub"  x="85" y="159" text-anchor="middle">RADIO</text>
+
+  <rect class="box" x="300" y="88" width="140" height="114" rx="9"/>
+  <text class="boxname" x="370" y="136" text-anchor="middle" style="font-size:14px">UNO</text>
+  <text class="boxsub"  x="370" y="155" text-anchor="middle">ONE UART</text>
+
+  <rect class="box" x="590" y="100" width="110" height="90" rx="9"/>
+  <text class="boxname" x="645" y="140" text-anchor="middle" style="font-size:14px">CH340</text>
+  <text class="boxsub"  x="645" y="159" text-anchor="middle">USB</text>
+
+  <path class="w" stroke="var(--green)" marker-end="url(#arrOk)" d="M300,120 L162,120"/>
+  <path class="w" stroke="var(--green)" marker-end="url(#arrOk)" d="M440,120 L578,120"/>
+  <text class="note" x="225" y="108" text-anchor="middle">D1 &#183; TX</text>
+  <text class="note" x="515" y="108" text-anchor="middle">D1 &#183; TX</text>
+
+  <path class="w" stroke="var(--danger)" d="M150,182 L193,182"/>
+  <path class="w" stroke="var(--danger)" d="M193,182 L232,169"/>
+  <circle cx="193" cy="182" r="3.5" fill="var(--danger)"/>
+  <circle cx="237" cy="182" r="3.5" fill="var(--danger)"/>
+  <path class="w" stroke="var(--danger)" marker-end="url(#arrBad)" d="M237,182 L288,182"/>
+  <path class="w" stroke="var(--danger)" marker-end="url(#arrBad)" d="M590,182 L452,182"/>
+  <text class="note" x="215" y="205" text-anchor="middle">BT switch</text>
+  <text class="note" x="515" y="205" text-anchor="middle">D0 &#183; RX</text>
+
+  <text class="note"  x="370" y="238" text-anchor="middle">one talker, two listeners</text>
+  <text class="xlab"  x="370" y="266" text-anchor="middle">TWO TALKERS, ONE LISTENER</text>
+</svg>
+<figcaption>Top: the Arduino transmits on D1 and both the module and the USB chip simply
+hear it — harmless. Bottom: the module's TXD <em>and</em> the USB chip's output can both
+drive D0. That is the collision, and it is the receive direction.</figcaption>
+</figure>
+
+<p>So sending telemetry back to the phone costs you nothing: the serial monitor just shows
+a copy of whatever the car tells the app, which is genuinely useful while debugging.
+Receiving is the half with two drivers on one wire.</p>
+
+<div class="note">
+  <h4>The shield already has the answer</h4>
+  <p>Per the manual (pp. 113 and 262) the balance shield carries a <strong>Bluetooth
+  switch</strong>. You do not have to pull the module: flip that switch off while the USB
+  cable is in, and on once it is out. The documented sequence is upload &#8594; unplug USB
+  &#8594; power switch on &#8594; Bluetooth switch on.</p>
+</div>
+
+<p>Which gives one genuinely useful trick: with the Bluetooth switch <em>off</em>, the
+serial monitor is a stand-in for the phone. Type the same single characters —
+<code class="cmd">F</code>, <code class="cmd">B</code>, <code class="cmd">L</code>,
+<code class="cmd">R</code>, <code class="cmd">S</code> — and you can exercise the entire
+command protocol with no radio in the picture at all. Prove the firmware there first, then
+turn the radio on and you are only debugging the BLE link.</p>
+
 <h2>The BLE side</h2>
 
 <p>The HM-10 exposes a transparent serial pipe as a single GATT characteristic — write to
@@ -353,11 +425,11 @@ lose one direction while the other keeps working — see below.</p>
 </div>
 
 <div class="warn">
-  <h4>4 · You still have to unplug it before flashing</h4>
-  <p>The XBee socket sits on the hardware UART shared with the USB-serial chip. Swapping
-  the radio changes nothing about that: leave the module in during upload and it still
-  fails with <code>avrdude: stk500_getsync(): not in sync</code>. The serial monitor and
-  the phone still cannot both be connected.</p>
+  <h4>4 · You still have to isolate it before flashing</h4>
+  <p>Swapping the radio changes nothing about the shared UART. Turn the shield's Bluetooth
+  switch off before uploading — bootloader traffic on D0 is exactly the collision described
+  above — or it still fails with <code>avrdude: stk500_getsync(): not in sync</code>. The
+  serial monitor and the phone still cannot both be sending.</p>
 </div>
 
 <h2>Replacing the app</h2>
