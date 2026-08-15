@@ -13,14 +13,29 @@
     --text:#E7F1F2; --muted:#7C93A0; --ghost:#2E4756;
     --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
   }
+  /* Light theme. Accents are darkened rather than reused: the neon values above are
+     tuned for a near-black background and fail contrast on white. */
+  :root[data-theme="light"]{
+    --bg:#F5F8FA; --panel:#FFFFFF; --panel-2:#EDF2F5; --border:#D0DCE4;
+    --cyan:#0B7C71; --amber:#9C5A00; --danger:#C1272D; --green:#2A7A37;
+    --violet:#5834B0; --pink:#AC2A77;
+    --text:#13202A; --muted:#55707F; --ghost:#8CA3B1;
+  }
   *{box-sizing:border-box;}
+  .themesel{position:absolute;top:26px;right:20px;display:flex;gap:4px;}
+  .themesel button{background:var(--panel);color:var(--muted);border:1px solid var(--border);
+    border-radius:6px;font:inherit;font-size:10.5px;padding:5px 11px;cursor:pointer;}
+  .themesel button:hover{color:var(--cyan);border-color:var(--cyan);}
+  .themesel button.on{color:var(--bg);background:var(--cyan);border-color:var(--cyan);}
+  @media(max-width:620px){.themesel{position:static;margin-top:14px;}}
+
   html{scroll-behavior:smooth;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);
     line-height:1.6;padding:0 0 70px;font-size:14px;}
   .shell{max-width:900px;margin:0 auto;padding:0 20px;}
 
   header.top{border-bottom:1px solid var(--border);margin-bottom:34px;}
-  .top-in{max-width:900px;margin:0 auto;padding:34px 20px 24px;}
+  .top-in{position:relative;max-width:900px;margin:0 auto;padding:34px 20px 24px;}
   h1{font-size:26px;margin:0 0 10px;letter-spacing:-.01em;}
   h1 .kit{color:var(--cyan);}
   .lede{color:var(--muted);margin:0;max-width:66ch;}
@@ -73,6 +88,10 @@
 
 <header class="top">
   <div class="top-in">
+    <div class="themesel">
+      <button data-set-theme="dark">◐ dark</button>
+      <button data-set-theme="light">◑ light</button>
+    </div>
     <h1>🛴 KS0193 — <span class="kit">keyestudio Self-Balancing Car Kit</span></h1>
     <p class="lede">The keyestudio KS0193 self-balancing car, as a <strong>workshop</strong>:
     the vendor's manuals and 13 stock Arduino sketches, plus a teaching layer built on top
@@ -282,5 +301,29 @@ object-file path past the 260-character limit.</p>
 </footer>
 
 </div>
+
+<script>
+/* The same two-theme switch as 4. Tutorial/workshop.html, sharing its localStorage key so
+   a choice made on one page carries over to the others. Dark is the default. */
+(function(){
+  function mark(t){
+    document.querySelectorAll("[data-set-theme]").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-set-theme") === t);
+    });
+  }
+  function setTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("ks0193.theme", t); } catch(e){}
+    mark(t);
+  }
+  var saved = "dark";
+  try { saved = localStorage.getItem("ks0193.theme") || "dark"; } catch(e){}
+  document.documentElement.setAttribute("data-theme", saved);
+  mark(saved);
+  document.querySelectorAll("[data-set-theme]").forEach(function(b){
+    b.addEventListener("click", function(){ setTheme(b.getAttribute("data-set-theme")); });
+  });
+})();
+</script>
 </body>
 </html>
