@@ -56,6 +56,7 @@
   h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
     margin:48px 0 16px;font-weight:400;}
   .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .cards.two{grid-template-columns:repeat(2,1fr);}
   @media(max-width:820px){.cards{grid-template-columns:1fr;}}
   .card{display:block;background:var(--panel);border:1px solid var(--border);
     border-radius:12px;padding:20px;color:inherit;transition:border-color .15s,transform .15s;}
@@ -149,6 +150,24 @@
       <p>keyestudio's own kit manual as shipped — assembly, wiring diagrams and the
       original lesson write-ups.</p>
       <span class="go">Open the PDF →</span>
+    </a>
+  </div>
+
+  <h2>Going further</h2>
+  <div class="cards two">
+    <a class="card" href="porting-esp32-s3.html">
+      <div class="ico">🔀</div>
+      <h3>Porting to ESP32-S3</h3>
+      <p>Swapping the UNO for a D1 ESP32-S3 under the same shield — the pin map, the
+      strapping-pin and 5 V traps, and what has to be rewritten.</p>
+      <span class="go">Read the port notes →</span>
+    </a>
+    <a class="card" href="bluetooth-hm10.html">
+      <div class="ico">📡</div>
+      <h3>HM-10 integration</h3>
+      <p>Trading the HC-06 for BLE: why the sketches don't change, why the bundled app
+      stops working, and the full command protocol.</p>
+      <span class="go">Read the BLE notes →</span>
     </a>
   </div>
 
