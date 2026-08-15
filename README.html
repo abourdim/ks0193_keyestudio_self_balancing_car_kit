@@ -13,21 +13,6 @@
     --text:#E7F1F2; --muted:#7C93A0; --ghost:#2E4756;
     --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
   }
-  /* Accents are darkened rather than reused: the neon values fail contrast on white. */
-  :root[data-theme="light"]{
-    --bg:#F5F8FA; --panel:#FFFFFF; --panel-2:#EDF2F5; --border:#D0DCE4;
-    --cyan:#0B7C71; --amber:#9C5A00; --danger:#C1272D; --green:#2A7A37;
-    --violet:#5834B0; --pink:#AC2A77;
-    --text:#13202A; --muted:#55707F; --ghost:#8CA3B1;
-  }
-  @media(prefers-color-scheme:light){
-    :root:not([data-theme="dark"]){
-      --bg:#F5F8FA; --panel:#FFFFFF; --panel-2:#EDF2F5; --border:#D0DCE4;
-      --cyan:#0B7C71; --amber:#9C5A00; --danger:#C1272D; --green:#2A7A37;
-      --violet:#5834B0; --pink:#AC2A77;
-      --text:#13202A; --muted:#55707F; --ghost:#8CA3B1;
-    }
-  }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);
